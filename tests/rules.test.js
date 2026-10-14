@@ -67,6 +67,16 @@ const CASES = [
   ['sie/er', 'er'],
   ['seine/ihre Aufgaben', 'seine Aufgaben'],
   ['ihm/ihr', 'ihm'],
+  // Dativ-Kurzformen
+  ['einem/r Tutor/in', 'einem Tutor'],
+  ['Mit einem/r Tutor/in sprechen', 'Mit einem Tutor sprechen'],
+  ['einer/m Tutor*in', 'einem Tutor'],
+  ['einem*r Ärzt*in', 'einem Arzt'],
+  ['jedem/r Student*in', 'jedem Student'],
+  ['mit diesem:r Lehrer:in', 'mit diesem Lehrer'],
+  ['einemR Autor', 'einem Autor'],
+  ['des/der Lehrer*in', 'des Lehrer'],
+  ['den/die Student*in', 'den Student'],
   // Doppelformen
   ['Patientinnen und Patienten', 'Patienten'],
   ['Die Patientinnen und Patienten warten.', 'Die Patienten warten.'],

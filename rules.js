@@ -164,6 +164,9 @@
 
   const reDetEnd = new RegExp(P`(?<![\p{L}])(${DET})e[*:_·\/]([rnms])(?![\p{L}])`, 'gu');
   const reDetBI = new RegExp(P`(?<![\p{L}])(${DET})e([RNMS])(?![\p{L}])`, 'gu');
+  // Dativ: einem/r, einer/m, jedem*r, diesem:r, einemR ... werden zu -em
+  const reDetCase = new RegExp(P`(?<![\p{L}])(${DET})(?:em|er)[*:_·\/]([rm])(?![\p{L}])`, 'gu');
+  const reDetCaseBI = new RegExp(P`(?<![\p{L}])(${DET})(?:em|er)([RM])(?![\p{L}])`, 'gu');
   const reDetSing = new RegExp(P`(?<![\p{L}])(${DET_SING})(?:[*:_·\/]e|E)(?![\p{L}])`, 'gu');
 
   const QUICK = new RegExp(
@@ -180,6 +183,8 @@
 
   function determiners(t) {
     return t
+      .replace(reDetCase, function (m, d) { return d + 'em'; })
+      .replace(reDetCaseBI, function (m, d) { return d + 'em'; })
       .replace(reDetEnd, function (m, d, e) { return d + 'e' + e; })
       .replace(reDetBI, function (m, d, e) { return d + 'e' + e.toLowerCase(); })
       .replace(reDetSing, function (m, d) { return d; });
@@ -190,6 +195,8 @@
       .replace(/(?<![\p{L}])([Dd])(?:er\/[Dd]ie|ie\/[Dd]er)(?=\s+\p{Lu})/gu, '$1er')
       .replace(/(?<![\p{L}])([Ee])in(?:\/[Ee]ine|e\/[Ee]in)(?=\s+\p{Lu})/gu, '$1in')
       .replace(/(?<![\p{L}])([Dd])(?:em\/[Dd]er|er\/[Dd]em)(?=\s+\p{Lu})/gu, '$1em')
+      .replace(/(?<![\p{L}])([Dd])(?:es\/[Dd]er|er\/[Dd]es)(?=\s+\p{Lu})/gu, '$1es')
+      .replace(/(?<![\p{L}])([Dd])(?:en\/[Dd]ie|ie\/[Dd]en)(?=\s+\p{Lu})/gu, '$1en')
       .replace(/(?<![\p{L}])([Ee])inem\/[Ee]iner(?=\s+\p{Lu})|(?<![\p{L}])([Ee])iner\/[Ee]inem(?=\s+\p{Lu})/gu,
         function (m, a, b) { return (a || b) + 'inem'; })
       .replace(/(?<![\p{L}])([Ee])r\/[Ss]ie(?![\p{L}])/gu, '$1r')
