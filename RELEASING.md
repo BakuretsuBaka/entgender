@@ -7,7 +7,7 @@
 
 ## Pro Version
 1. Version in `manifest.json` und `package.json` erhöhen, `npm test`.
-2. Commit, dann Tag setzen und pushen: `git tag v1.0.1 && git push --tags`. Der Workflow `release.yml` baut beide Pakete, prüft das Firefox-Paket mit `web-ext lint` und hängt die ZIPs an das GitHub-Release.
+2. Commit und push. Dann auf GitHub unter Releases > **Draft a new release** ein neues Tag (z. B. `v1.0.2`) anlegen und veröffentlichen. Der Workflow `release.yml` baut beide Pakete, prüft das Firefox-Paket mit `web-ext lint` und hängt die ZIPs an das Release.
 3. **Chrome**: Das ZIP aus dem GitHub-Release ist die Chrome-Version. Für den Web Store (falls gewünscht) im Dashboard hochladen und Angaben aus `store/LISTING.md` eintragen.
 4. **Firefox**: `entgender-firefox-<version>.zip` bei AMO hochladen (Listed), Beschreibung und Prüferhinweise aus `store/LISTING.md` eintragen.
 5. Edge nimmt dasselbe ZIP wie Chrome (<https://partner.microsoft.com/dashboard/microsoftedge>), optional.
