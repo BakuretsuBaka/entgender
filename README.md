@@ -16,7 +16,7 @@ Browser-Erweiterung (Chrome und alle Chromium-Browser, Manifest V3), die Genders
 | Schrägstrich-Paare | der/die Lehrer, er/sie, seine/ihre | der Lehrer, er, seine |
 | Substantivierte Partizipien | Studierende, Zuschauende, Teilnehmende, Mitarbeitende | Studenten, Zuschauer, Teilnehmer, Mitarbeiter |
 
-Die Pluralformen werden mit einer Regel für die gängigen Endungen (-er, -en, -e, Umlaute wie Ärzte und Anwälte, Sonderfälle wie Nachbarn und Chefs) gebildet. Artikel direkt vor dem Wort werden angepasst (die Lehrer\*in wird zu der Lehrer). Eingeschobene Adjektive („die neue Lehrer\*in“) und Fälle werden nicht grammatisch nachgezogen.
+Die Pluralformen werden mit einer Regel für die gängigen Endungen (-er, -en, -e, Umlaute wie Ärzte und Anwälte, Sonderfälle wie Nachbarn und Chefs) gebildet. Artikel direkt vor dem Wort werden angepasst (die Lehrer\*in wird zu der Lehrer). Bei Einzahlformen wird der Fall aus Artikel oder Präposition davor erschlossen und das Nomen passend gebeugt („einem/r Patient\*in“ wird zu „einem Patienten“, „für Kolleg\*in“ zu „für Kollegen“, „des/der Lehrer\*in“ zu „des Lehrers“); ohne erkennbaren Fall bleibt die Grundform. Eingeschobene Adjektive („die neue Lehrer\*in“) werden nicht angepasst.
 
 Bei den Partizipien wird nur ersetzt, was als Personenbezeichnung im Plural erkennbar ist (großgeschrieben, ohne Artikel oder mit Artikel im Plural, Fall wird aus dem Umfeld erschlossen: „den Zuschauenden“ wird zu „den Zuschauern“). Adjektive („die studierende Tochter“, „ein zuschauendes Kind“, „leitende Angestellte“), die weibliche Einzahl („die Studierende“, „eine Studierende“), die männliche Einzahl („ein Studierender“) und Titel wie „Studierende Frauen“ bleiben stehen. Es werden nur Partizipien aus einer Liste angefasst (Studierende, Zuschauende, Teilnehmende, Mitarbeitende, Lehrende, Forschende, Lesende, Nutzende, Besuchende, Wählende, Fahrende, Verkaufende, Kaufende, Spielende, Hörende, Pflegende, Sprechende, Schreibende, Leitende, Beratende, Prüfende, Bewerbende, Anbietende, Verbrauchende, Verwaltende, Vermietende, Mietende, Bewohnende, Entwickelnde, Programmierende, Gründende, Ausbildende, Bearbeitende, Wandernde, Lernende, Demonstrierende, auch in Zusammensetzungen wie Radfahrende). Wörter wie „Anwesende“ oder „Reisende“ bleiben unberührt. Weitere Wörter lassen sich in den Einstellungen als eigene Ersetzung eintragen.
 
@@ -34,6 +34,24 @@ Nicht angefasst werden außerdem rein weibliche Formen (Studentin), Eingabefelde
 4. Für ein Update die neue ZIP-Datei über den alten Ordner entpacken und in `chrome://extensions` beim Eintrag auf „Neu laden“ klicken.
 
 Hinweis: Unter Windows zeigt Chrome bei entpackten Erweiterungen beim Start unter Umständen den Hinweis „Erweiterungen im Entwicklermodus deaktivieren“ an. Das ist eine Eigenheit von Chrome und lässt sich nur mit einem Eintrag im Chrome Web Store vermeiden.
+
+**Nyxt, qutebrowser, Pale Moon:** Diese Browser laden keine Chrome- oder Firefox-Erweiterungen. Dafür gibt es im Release das Userscript `entgender-<version>.user.js` mit denselben Regeln (ohne Popup und ohne Zähler). Die Einstellungen stehen in einem Block am Anfang der Datei. Nach einer Änderung das Skript neu laden.
+
+- **qutebrowser:** Datei nach `~/.local/share/qutebrowser/greasemonkey/` kopieren (Ordner anlegen, falls nötig) und `:greasemonkey-reload` ausführen. Die Skripte laufen auf allen Seiten und in Frames.
+- **Nyxt:** Die Datei irgendwo ablegen, z. B. `~/.config/nyxt/entgender.user.js`, und in der `config.lisp` den `user-script-mode` mit dem Skript einschalten. Die Paket- und Klassennamen unterscheiden sich je nach Nyxt-Version, Grundmuster (siehe Abschnitt „User scripts“ im Nyxt-Handbuch):
+
+  ```lisp
+  (define-configuration web-buffer
+    ((default-modes (pushnew 'nyxt/mode/user-script:user-script-mode %slot-default%))))
+  (define-configuration nyxt/mode/user-script:user-script-mode
+    ((nyxt/mode/user-script:user-scripts
+      (list (make-instance 'nyxt/mode/user-script:user-script
+                           :base-path #p"~/.config/nyxt/entgender.user.js")))))
+  ```
+  Nyxt braucht eine WebKitGTK-Version mit RegExp-Lookbehind (ab 2.40).
+- **Pale Moon:** Das Greasemonkey-Add-on für Pale Moon installieren (von der Add-ons-Seite von Pale Moon) und die `.user.js`-Datei öffnen. Pale Moon ist **nicht getestet**: Das Skript braucht Lookbehind und `\p{L}` in regulären Ausdrücken. Fehlt dem Browser das, schreibt das Skript eine Meldung in die Konsole und tut nichts, die Seiten bleiben unverändert.
+
+Das Userscript ist in den Tests nur mit jsdom geprüft, nicht in den drei Browsern selbst. Wenn etwas nicht läuft, bitte ein Issue mit Browser- und Versionsangabe anlegen.
 
 Danach die alten Gender-Entferner-Erweiterungen deaktivieren oder entfernen.
 
@@ -53,6 +71,7 @@ python3 tools/make_icons.py   # Icons neu erzeugen (Pillow)
 
 - `rules.js`: sämtliche Textregeln, ohne Browserabhängigkeit (wird auch von den Tests geladen).
 - `content.js`: DOM-Durchlauf, MutationObserver für nachgeladene Inhalte, Wiederherstellung, offene Shadow-DOMs.
+- `tools/build.py`: baut die Pakete und das Userscript (`rules.js` + `content.js` mit eingebetteten Einstellungen).
 - `background.js`: Service-Worker, summiert die Zähler pro Tab und setzt das Badge.
 - `popup.*`, `options.*`, `ui.css`: Oberfläche.
 

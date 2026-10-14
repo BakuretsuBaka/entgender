@@ -16,5 +16,7 @@ jobs:
       - run: npm test
       - name: Pakete bauen
         run: python3 tools/build.py
+      - name: Userscript prüfen
+        run: node --check dist/entgender-*.user.js
       - name: Firefox-Paket prüfen
         run: npx --yes web-ext lint --source-dir dist/firefox --warnings-as-errors

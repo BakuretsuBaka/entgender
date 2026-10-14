@@ -121,6 +121,7 @@
   function report(immediate, init) {
     clearTimeout(reportTimer);
     const send = function () {
+      if (typeof chrome === 'undefined' || !chrome.runtime) return; // Userscript: kein Zähler
       try {
         chrome.runtime.sendMessage(
           { type: 'entgender:count', count: currentCount(), init: !!init },
@@ -210,6 +211,12 @@
     report(true, firstApply);
     if (firstApply) report(false);
     firstApply = false;
+  }
+
+  // Als Userscript (Nyxt, qutebrowser, Pale Moon) liegen die Einstellungen im Skript selbst.
+  if (globalThis.__ENTGENDER_SETTINGS__ !== undefined) {
+    apply(globalThis.__ENTGENDER_SETTINGS__);
+    return;
   }
 
   try {

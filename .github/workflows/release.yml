@@ -1,7 +1,7 @@
 name: Release
 
 # Läuft, sobald auf GitHub ein Release veröffentlicht wird (Releases > Draft a new release,
-# dort ein neues Tag wie v1.0.1 anlegen). Baut beide Pakete und hängt sie an das Release.
+# dort ein neues Tag wie v1.0.1 anlegen). Baut die Pakete und das Userscript und hängt sie an das Release.
 on:
   release:
     types: [published]
@@ -27,4 +27,4 @@ jobs:
       - name: Pakete an das Release hängen
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ github.event.release.tag_name }}" dist/*.zip --clobber
+        run: gh release upload "${{ github.event.release.tag_name }}" dist/*.zip dist/*.user.js --clobber
