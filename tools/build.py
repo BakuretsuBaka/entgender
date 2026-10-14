@@ -3,14 +3,13 @@
 
     python3 tools/build.py [--gecko-id entgender@deine-domain.tld]
 
-Die Firefox-ID kann auch über die Umgebungsvariable GECKO_ID gesetzt werden.
-Sie ist für AMO dauerhaft und muss eindeutig sein: einmal festlegen, nie mehr ändern.
+Die Firefox-ID (Standard: entgender@bakuretsubaka.github.io) kann mit --gecko-id oder der
+Umgebungsvariable GECKO_ID überschrieben werden. Sie ist bei AMO dauerhaft: nie mehr ändern.
 """
 import argparse
 import json
 import os
 import shutil
-import sys
 import zipfile
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -22,7 +21,7 @@ FILES = [
     "icons/icon16.png", "icons/icon48.png", "icons/icon128.png",
     "LICENSE",
 ]
-PLACEHOLDER_ID = "entgender@CHANGE-ME.invalid"
+DEFAULT_ID = "entgender@bakuretsubaka.github.io"
 FIREFOX_MIN = "142.0"  # data_collection_permissions: Desktop ab 140, Android ab 142
 
 
@@ -71,10 +70,7 @@ def main():
 
     ff = json.loads(json.dumps(base))
     ff["background"] = {"scripts": ["background.js"]}
-    gecko_id = args.gecko_id or PLACEHOLDER_ID
-    if gecko_id == PLACEHOLDER_ID:
-        print("WARNUNG: keine Firefox-ID angegeben, Platzhalter wird verwendet "
-              "(nicht für AMO geeignet).", file=sys.stderr)
+    gecko_id = args.gecko_id or DEFAULT_ID
     ff["browser_specific_settings"] = {
         "gecko": {
             "id": gecko_id,

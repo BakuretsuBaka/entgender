@@ -19,16 +19,20 @@ Die Pluralformen werden mit einer Regel für die gängigen Endungen (-er, -en, -
 
 Nicht angefasst werden rein weibliche Formen (Studentin), neutrale Formen (Studierende), Eingabefelder, editierbare Bereiche sowie code-, pre- und script-Inhalte. Wörter wie LinkedIn oder Sign_in stehen auf einer Ausnahmeliste.
 
-## Installation (Chrome, Edge, Brave)
+## Installation
 
-1. ZIP entpacken.
-2. `chrome://extensions` öffnen und oben rechts den **Entwicklermodus** einschalten.
-3. **Entpackte Erweiterung laden** und den entpackten Ordner `entgender` wählen.
-4. Die drei alten Erweiterungen deaktivieren oder entfernen.
+**Firefox:** über Firefox Add-ons (addons.mozilla.org), sobald die Prüfung abgeschlossen ist. Voraussetzung ist Firefox 142 oder neuer (Desktop und Android).
 
-## Firefox
+**Chrome, Edge, Brave (aus dem GitHub-Release):** Es gibt keinen Eintrag im Chrome Web Store, die Erweiterung wird als entpackte Erweiterung geladen.
 
-Für Firefox gibt es ein eigenes Paket (`entgender-firefox-<version>.zip` aus den GitHub-Releases oder `python3 tools/build.py`). Zum Ausprobieren: `about:debugging` > Dieser Firefox > Temporäres Add-on laden und dort die `manifest.json` aus `dist/firefox` wählen. Voraussetzung ist Firefox 142 oder neuer.
+1. Auf der Seite [Releases](https://github.com/BakuretsuBaka/entgender/releases) die Datei `entgender-chrome-<version>.zip` herunterladen und entpacken.
+2. `chrome://extensions` öffnen (Edge: `edge://extensions`) und oben rechts den **Entwicklermodus** einschalten.
+3. **Entpackte Erweiterung laden** wählen und den entpackten Ordner auswählen. Der Ordner muss dauerhaft an seinem Platz bleiben, Chrome liest die Dateien von dort.
+4. Für ein Update die neue ZIP-Datei über den alten Ordner entpacken und in `chrome://extensions` beim Eintrag auf „Neu laden“ klicken.
+
+Hinweis: Unter Windows zeigt Chrome bei entpackten Erweiterungen beim Start unter Umständen den Hinweis „Erweiterungen im Entwicklermodus deaktivieren“ an. Das ist eine Eigenheit von Chrome und lässt sich nur mit einem Eintrag im Chrome Web Store vermeiden.
+
+Danach die alten Gender-Entferner-Erweiterungen deaktivieren oder entfernen.
 
 ## Bedienung
 
