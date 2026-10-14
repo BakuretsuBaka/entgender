@@ -24,7 +24,7 @@ Nicht angefasst werden außerdem rein weibliche Formen (Studentin), Eingabefelde
 
 ## Installation
 
-**Firefox:** über Firefox Add-ons (addons.mozilla.org), sobald die Prüfung abgeschlossen ist. Voraussetzung ist Firefox 142 oder neuer (Desktop und Android).
+**Firefox:** über [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/entgender/) (sobald die Prüfung abgeschlossen ist, vorher ist die Seite noch nicht erreichbar). Voraussetzung ist Firefox 142 oder neuer (Desktop und Android).
 
 **Chrome, Edge, Brave (aus dem GitHub-Release):** Es gibt keinen Eintrag im Chrome Web Store, die Erweiterung wird als entpackte Erweiterung geladen.
 
