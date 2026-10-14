@@ -160,7 +160,7 @@
   const reCompoundBI = new RegExp(P`(?<=\p{Ll})Innen(?=\p{Ll})`, 'gu');
   const reParen = new RegExp(P`(?<![\p{L}])(\p{Lu}\p{L}*)\(inn\)en(?![\p{L}])`, 'gu');
   const reGap = new RegExp(
-    P`(?<![\p{L}])(?:([Dd]ie|[Ee]ine)(\s+))?(\p{Lu}\p{L}*?)(?:(?:[*:_·]|\/-?|\()(innen|in)\)?|(?<=\p{Ll})(Innen|In))(?![\p{L}])`, 'gu');
+    P`(?<![\p{L}])(?:([Dd]ie|[Ee]ine|[Dd]er|[Ee]iner)(\s+))?(\p{Lu}\p{L}*?)(?:(?:[*:_·]|\/-?|\()(innen|in)\)?|(?<=\p{Ll})(Innen|In))(?![\p{L}])`, 'gu');
 
   const reDetEnd = new RegExp(P`(?<![\p{L}])(${DET})e[*:_·\/]([rnms])(?![\p{L}])`, 'gu');
   const reDetBI = new RegExp(P`(?<![\p{L}])(${DET})e([RNMS])(?![\p{L}])`, 'gu');
@@ -243,18 +243,95 @@
     return t;
   }
 
+  // ---------------------------------------------------------------------
+  // Fall bei Einzahlformen (einem Tutor, des Studenten, für Kollegen)
+  // ---------------------------------------------------------------------
+
+  const CASE_DET = {};
+  [
+    ['D', 'einem dem jedem diesem jenem welchem manchem keinem meinem deinem seinem ihrem unserem eurem'],
+    ['A', 'einen den jeden diesen jenen welchen manchen keinen meinen deinen seinen ihren unseren euren'],
+    ['G', 'eines des dieses jenes welches manches keines meines deines seines ihres unseres eures']
+  ].forEach(function (e) {
+    e[1].split(' ').forEach(function (w) { CASE_DET[w] = e[0]; });
+  });
+  const NOM_DET = new Set(['ein', 'der', 'kein', 'jeder', 'dieser', 'jener', 'welcher', 'mancher',
+    'mein', 'dein', 'sein', 'ihr', 'unser', 'euer', 'jede', 'diese', 'jene', 'welche', 'manche',
+    'keine', 'meine', 'deine', 'seine', 'ihre', 'unsere', 'eure', 'eine', 'die']);
+  const ACC_PREP = new Set(['für', 'durch', 'gegen', 'ohne', 'um', 'bis', 'wider']);
+
+  const WEAK_RE = new RegExp(
+    '(?:e|ent|ant|ist|graf|graph|soph|krat|nom|narch|triarch|' +
+    'kandidat|soldat|delegat|advokat|diplomat|pirat|primat|' +
+    'mensch|held|fürst|prinz|architekt|kamerad|nachbar|bauer|herr)$');
+
+  function lastWord(before) {
+    const cut = before.split(reClauseCut).pop();
+    const w = cut.trim().split(/\s+/).filter(Boolean);
+    return w.length ? w[w.length - 1].toLowerCase() : '';
+  }
+
+  // Fall des folgenden Nomens aus Artikel oder Präposition davor.
+  // 'D' Dativ, 'A' Akkusativ, 'G' Genitiv, null: Nominativ oder unklar.
+  function singCase(before) {
+    const cut = before.split(reClauseCut).pop();
+    const words = cut.trim().split(/\s+/).filter(Boolean).slice(-3).reverse();
+    let hops = 0;
+    for (let i = 0; i < words.length; i++) {
+      const l = words[i].toLowerCase();
+      if (Object.prototype.hasOwnProperty.call(CASE_DET, l)) return CASE_DET[l];
+      if (NOM_DET.has(l)) return null;
+      if (DAT_PREP.has(l)) return 'D';
+      if (GEN_PREP.has(l)) return 'G';
+      if (ACC_PREP.has(l)) return 'A';
+      const adjLike = /^\p{Ll}{3,}(?:e|en|er|es|em)$/u.test(words[i]);
+      if (!adjLike || ++hops > 1) break;
+    }
+    return null;
+  }
+
+  function inflect(word, cs) {
+    if (!cs) return word;
+    const l = word.toLowerCase();
+    if (WEAK_RE.test(l)) {
+      return /(?:e|nachbar|bauer|herr)$/.test(l) ? word + 'n' : word + 'en';
+    }
+    if (cs !== 'G') return word;
+    return word + (/(?:[sßxz]|sch|arzt|gast|anwalt|freund|feind)$/.test(l) ? 'es' : 's');
+  }
+
+  function matchCase(orig, s) {
+    return /^\p{Lu}/u.test(orig) ? cap(s) : s;
+  }
+
   function gap(t, opts) {
     t = t.replace(reCompoundSep, '').replace(reCompoundBI, '');
     t = t.replace(reParen, function (m, stem) {
       if (ignored(m, opts) || IGNORE_STEMS.has(stem) || stem.length < 3) return m;
       return pluralMasc(stem);
     });
-    t = t.replace(reGap, function (m, art, sp, stem, g1, g2) {
+    t = t.replace(reGap, function (m, art, sp, stem, g1, g2, offset, str) {
       if (ignored(m, opts) || IGNORE_STEMS.has(stem) || stem.length < 3) return m;
       const plural = (g1 || g2).toLowerCase() === 'innen';
-      const word = plural ? pluralMasc(stem) : singularMasc(stem);
-      if (art) return (plural ? art : fixArt(art)) + sp + word;
-      return word;
+      if (plural) return (art ? art + sp : '') + pluralMasc(stem);
+      const before = str.slice(0, offset);
+      let word = singularMasc(stem);
+      let cs = null;
+      let outArt = '';
+      if (art) {
+        const a = art.toLowerCase();
+        const prev = lastWord(before);
+        if (a === 'die' || a === 'eine') {
+          if (ACC_PREP.has(prev)) { cs = 'A'; outArt = matchCase(art, a === 'die' ? 'den' : 'einen'); }
+          else outArt = fixArt(art);
+        } else if (DAT_PREP.has(prev)) {
+          cs = 'D'; outArt = matchCase(art, a === 'der' ? 'dem' : 'einem');
+        } else if (GEN_PREP.has(prev)) {
+          cs = 'G'; outArt = matchCase(art, a === 'der' ? 'des' : 'eines');
+        } else outArt = art;
+        return outArt + sp + inflect(word, cs);
+      }
+      return inflect(word, singCase(before));
     });
     return t;
   }
