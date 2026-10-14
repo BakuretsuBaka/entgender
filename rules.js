@@ -18,7 +18,7 @@
     enabled: true,
     onlyGerman: false,
     disabledSites: [],
-    rules: { gap: true, doubles: true, determiners: true, articles: true },
+    rules: { gap: true, doubles: true, determiners: true, articles: true, participles: true },
     customReplacements: '',
     ignoreWords: ''
   };
@@ -167,7 +167,7 @@
   const reDetSing = new RegExp(P`(?<![\p{L}])(${DET_SING})(?:[*:_·\/]e|E)(?![\p{L}])`, 'gu');
 
   const QUICK = new RegExp(
-    P`[*:_·\/(]|\p{Ll}(?:Innen|In|E|R|N|M|S)(?!\p{L})|\p{Ll}Innen(?=\p{Ll})|in(?:nen)?\s+(?:und|oder|sowie|bzw|beziehungsweise)|(?:und|oder|sowie|bzw\.?|beziehungsweise)\s+(?:\p{L}+\s+)?\p{Lu}\p{L}*in(?:nen)?(?!\p{L})`,
+    P`[*:_·\/(]|\p{Ll}(?:Innen|In|E|R|N|M|S)(?!\p{L})|\p{Ll}Innen(?=\p{Ll})|in(?:nen)?\s+(?:und|oder|sowie|bzw|beziehungsweise)|(?:und|oder|sowie|bzw\.?|beziehungsweise)\s+(?:\p{L}+\s+)?\p{Lu}\p{L}*in(?:nen)?(?!\p{L})|\p{Lu}\p{L}*ende[nrsm]?(?![\p{L}])`,
     'u');
 
   function quickCheck(text) {
@@ -253,6 +253,110 @@
   }
 
   // ---------------------------------------------------------------------
+  // Substantivierte Partizipien (Studierende, Zuschauende, ...)
+  // ---------------------------------------------------------------------
+  //
+  // Ersetzt werden nur großgeschriebene Formen, die als Personenbezeichnung im
+  // Plural erkennbar sind. Kleingeschriebene Adjektive ("die studierende
+  // Tochter"), weibliche Einzahl ("die Studierende", "eine Studierende"),
+  // männliche Einzahl ("ein Studierender") und Titel wie "Studierende Frauen"
+  // bleiben unverändert. Nur Wörter aus der Liste werden angefasst.
+
+  // [Wortstamm, Berufs-/Personenbezeichnung, Art]
+  // Art 'n': n-Deklination (Plural auf -en), Art 'er': -er-Nomen (Dativ Plural auf -n)
+  const PART_ROOTS = [
+    ['studier', 'student', 'n'], ['demonstrier', 'demonstrant', 'n'],
+    ['teilnehm', 'teilnehmer', 'er'], ['zuschau', 'zuschauer', 'er'],
+    ['mitarbeit', 'mitarbeiter', 'er'], ['lehr', 'lehrer', 'er'],
+    ['forsch', 'forscher', 'er'], ['les', 'leser', 'er'], ['nutz', 'nutzer', 'er'],
+    ['besuch', 'besucher', 'er'], ['wähl', 'wähler', 'er'], ['fahr', 'fahrer', 'er'],
+    ['verkauf', 'verkäufer', 'er'], ['kauf', 'käufer', 'er'], ['spiel', 'spieler', 'er'],
+    ['hör', 'hörer', 'er'], ['zuhör', 'zuhörer', 'er'], ['pfleg', 'pfleger', 'er'],
+    ['sprech', 'sprecher', 'er'], ['schreib', 'schreiber', 'er'], ['leit', 'leiter', 'er'],
+    ['berat', 'berater', 'er'], ['prüf', 'prüfer', 'er'], ['bewerb', 'bewerber', 'er'],
+    ['anbiet', 'anbieter', 'er'], ['verbrauch', 'verbraucher', 'er'],
+    ['verwalt', 'verwalter', 'er'], ['vermiet', 'vermieter', 'er'], ['miet', 'mieter', 'er'],
+    ['bewohn', 'bewohner', 'er'], ['entwickl', 'entwickler', 'er'],
+    ['programmier', 'programmierer', 'er'], ['gründ', 'gründer', 'er'],
+    ['ausbild', 'ausbilder', 'er'], ['bearbeit', 'bearbeiter', 'er'],
+    ['wander', 'wanderer', 'er'], ['lern', 'lerner', 'er']
+  ];
+  // Wörter, die zufällig auf einen Wortstamm enden, aber etwas anderes bedeuten.
+  const PART_IGNORE_BASES = new Set(['zugehör', 'angehör', 'gehör', 'dazugehör', 'mitgehör']);
+
+  // Wörter vor dem Partizip, die über Zahl und Fall entscheiden.
+  const PL_ONLY = new Set(['alle', 'viele', 'einige', 'mehrere', 'zahlreiche', 'wenige', 'beide',
+    'sämtliche', 'manche', 'andere', 'weitere', 'solche', 'etliche', 'diverse', 'verschiedene']);
+  const SG_OR_PL = new Set(['die', 'diese', 'jene', 'welche', 'meine', 'deine', 'seine', 'ihre',
+    'unsere', 'eure', 'keine']);
+  const DAT_DET = new Set(['den', 'allen', 'vielen', 'einigen', 'mehreren', 'zahlreichen',
+    'wenigen', 'beiden', 'manchen', 'anderen', 'weiteren', 'solchen', 'diesen', 'jenen', 'meinen',
+    'deinen', 'seinen', 'ihren', 'unseren', 'euren', 'keinen', 'etlichen', 'diversen',
+    'verschiedenen']);
+  const GEN_DET = new Set(['der', 'aller', 'vieler', 'einiger', 'mehrerer', 'zahlreicher',
+    'weniger', 'beider', 'mancher', 'anderer', 'weiterer', 'solcher', 'dieser', 'jener', 'meiner',
+    'deiner', 'seiner', 'ihrer', 'unserer', 'eurer', 'keiner', 'etlicher', 'diverser',
+    'verschiedener']);
+  const SING_DET = new Set(['ein', 'eine', 'einem', 'einer', 'eines', 'einen', 'kein', 'jede',
+    'jeder', 'jedem', 'jeden', 'jedes', 'dem', 'des', 'dieses', 'diesem', 'jenes', 'jenem', 'mein',
+    'dein', 'sein', 'ihr', 'unser', 'euer', 'meinem', 'deinem', 'seinem', 'ihrem', 'unserem',
+    'eurem']);
+  const DAT_PREP = new Set(['mit', 'von', 'bei', 'aus', 'nach', 'zu', 'seit', 'gegenüber', 'samt',
+    'nebst']);
+  const GEN_PREP = new Set(['wegen', 'trotz', 'während', 'statt', 'anstatt', 'aufgrund',
+    'innerhalb', 'außerhalb', 'angesichts']);
+  const COPULA = new Set(['ist', 'war', 'bin', 'bist', 'wird', 'wurde', 'bleibt', 'blieb']);
+
+  const rePart = new RegExp(P`(?<![\p{L}])(\p{Lu}\p{L}*?)(ende[nrsm]?)(?![\p{L}])`, 'gu');
+  const reCapNext = new RegExp(P`^\s+\p{Lu}`, 'u');
+  const reClauseCut = /[.!?:;,()"“„\n–—]/;
+
+  function partCase(before, suffix) {
+    const cut = before.split(reClauseCut).pop();
+    const words = cut.trim().split(/\s+/).filter(Boolean).slice(-3).reverse();
+    let hops = 0;
+    for (let i = 0; i < words.length; i++) {
+      const w = words[i].toLowerCase();
+      if (COPULA.has(w)) return null;
+      if (SING_DET.has(w)) return null;
+      if (PL_ONLY.has(w)) return suffix === 'ender' ? 'G' : 'N';
+      if (SG_OR_PL.has(w)) return suffix === 'enden' ? 'N' : null;
+      if (DAT_DET.has(w)) return suffix === 'enden' ? 'D' : null;
+      if (GEN_DET.has(w)) return suffix === 'enden' ? 'G' : null;
+      if (DAT_PREP.has(w)) return suffix === 'enden' ? 'D' : null;
+      if (GEN_PREP.has(w)) return (suffix === 'enden' || suffix === 'ender') ? 'G' : null;
+      // Zwischenwörter: nur kleingeschriebene, adjektivartige Wörter überspringen.
+      const adjLike = /^\p{Ll}{3,}(?:e|en|er|es|em)$/u.test(words[i]);
+      if (!adjLike || ++hops > 2) break;
+    }
+    if (suffix === 'ende') return 'N';
+    if (suffix === 'enden') return 'D';
+    if (suffix === 'ender') return 'G';
+    return null;
+  }
+
+  function participles(t, opts) {
+    return t.replace(rePart, function (m, base, suffix, offset, str) {
+      if (ignored(m, opts)) return m;
+      const lower = base.toLowerCase();
+      if (PART_IGNORE_BASES.has(lower)) return m;
+      let best = null;
+      for (let i = 0; i < PART_ROOTS.length; i++) {
+        if (lower.endsWith(PART_ROOTS[i][0]) &&
+            (!best || PART_ROOTS[i][0].length > best[0].length)) best = PART_ROOTS[i];
+      }
+      if (!best) return m;
+      if (reCapNext.test(str.slice(offset + m.length))) return m;
+      const cls = partCase(str.slice(0, offset), suffix);
+      if (!cls) return m;
+      const prefix = base.slice(0, base.length - best[0].length);
+      let agent = best[2] === 'n' ? best[1] + 'en' : best[1];
+      if (best[2] === 'er' && cls === 'D') agent += 'n';
+      return prefix + (prefix ? agent : cap(agent));
+    });
+  }
+
+  // ---------------------------------------------------------------------
   // Einstiegspunkt
   // ---------------------------------------------------------------------
 
@@ -268,6 +372,7 @@
     if (r.articles) t = articles(t);
     if (r.doubles) t = doubles(t, opts);
     if (r.gap) t = gap(t, opts);
+    if (r.participles) t = participles(t, opts);
     return t;
   }
 

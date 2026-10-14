@@ -89,6 +89,23 @@ const CASES = [
   ['Ärztinnen und Ärzte und Patientinnen und Patienten', 'Ärzte und Patienten'],
   ['Der Lehrer und die Schülerinnen und Schüler', 'Der Lehrer und die Schüler'],
   ['Die Lehrer/innen, der/die Schüler_in und die BürgerInnen kommen.', 'Die Lehrer, der Schüler und die Bürger kommen.'],
+  // Substantivierte Partizipien
+  ['Studierende', 'Studenten'],
+  ['Die Studierenden sind da.', 'Die Studenten sind da.'],
+  ['Es kommen Zuschauende.', 'Es kommen Zuschauer.'],
+  ['Wir danken den Zuschauenden.', 'Wir danken den Zuschauern.'],
+  ['Die Meinung der Studierenden zählt.', 'Die Meinung der Studenten zählt.'],
+  ['Die Rechte der Lehrenden', 'Die Rechte der Lehrer'],
+  ['mit Teilnehmenden', 'mit Teilnehmern'],
+  ['viele Mitarbeitende', 'viele Mitarbeiter'],
+  ['Die Zahl Studierender steigt.', 'Die Zahl Studenten steigt.'],
+  ['alle Radfahrende', 'alle Radfahrer'],
+  ['Hochschullehrende', 'Hochschullehrer'],
+  ['Liebe Zuschauende, schön dass ihr da seid.', 'Liebe Zuschauer, schön dass ihr da seid.'],
+  ['die jungen Studierenden', 'die jungen Studenten'],
+  ['mit jungen Studierenden', 'mit jungen Studenten'],
+  ['mit jungen Zuschauenden', 'mit jungen Zuschauern'],
+  ['Studierende und Lehrende', 'Studenten und Lehrer'],
   // Satzumgebung
   ['Liebe Leser*innen, schön dass ihr da seid.', 'Liebe Leser, schön dass ihr da seid.'],
   ['Alle Teilnehmer*innen und Referent*innen kommen.', 'Alle Teilnehmer und Referenten kommen.']
@@ -101,7 +118,6 @@ for (const [input, expected] of CASES) {
 }
 
 const UNCHANGED = [
-  'Studierende',
   'Studentin',
   'Lehrerinnen',
   'Medizin und Medizinern',
@@ -115,6 +131,22 @@ const UNCHANGED = [
   'Wie geht es dir? Gut: und dir?',
   'Innenstadt und Außenbereich',
   'Binnenmarkt',
+  // Partizipien als Adjektiv oder in Einzahl bleiben stehen
+  'die studierende Tochter',
+  'ein zuschauendes Kind',
+  'die lehrende Tätigkeit',
+  'die Studierende',
+  'eine Studierende',
+  'Der Studierende',
+  'ein Studierender',
+  'dem Studierenden',
+  'des Studierenden',
+  'Sie ist Studierende.',
+  'Studierende Frauen in der Wissenschaft',
+  'leitende Angestellte',
+  'Das Ende der Legende',
+  'die Anwesenden',
+  'die Zugehörenden',
   'und/oder',
   'Studenten',
   'Der Arzt und die Pflegerin',
@@ -151,6 +183,11 @@ test('eigene Ersetzungen laufen vor den Regeln', () => {
 test('Ausnahmen werden nicht angefasst', () => {
   const o = E.buildOptions({ ignoreWords: 'Student*innen' });
   assert.equal(run('Student*innen und Lehrer*innen', o), 'Student*innen und Lehrer');
+});
+
+test('Partizipien-Regel lässt sich abschalten', () => {
+  const o = E.buildOptions({ rules: { participles: false } });
+  assert.equal(run('Studierende', o), 'Studierende');
 });
 
 test('Seitenliste erkennt Unterdomains', () => {

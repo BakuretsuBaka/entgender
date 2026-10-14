@@ -14,10 +14,13 @@ Browser-Erweiterung (Chrome und alle Chromium-Browser, Manifest V3), die Genders
 | Doppelformen | Patientinnen und Patienten, die Ärztin oder der Arzt | Patienten, der Arzt |
 | Artikel mit Zeichen | jede\*r, jedeR, ein\*e, eine\*n | jeder, jeder, ein, einen |
 | Schrägstrich-Paare | der/die Lehrer, er/sie, seine/ihre | der Lehrer, er, seine |
+| Substantivierte Partizipien | Studierende, Zuschauende, Teilnehmende, Mitarbeitende | Studenten, Zuschauer, Teilnehmer, Mitarbeiter |
 
 Die Pluralformen werden mit einer Regel für die gängigen Endungen (-er, -en, -e, Umlaute wie Ärzte und Anwälte, Sonderfälle wie Nachbarn und Chefs) gebildet. Artikel direkt vor dem Wort werden angepasst (die Lehrer\*in wird zu der Lehrer). Eingeschobene Adjektive („die neue Lehrer\*in“) und Fälle werden nicht grammatisch nachgezogen.
 
-Nicht angefasst werden rein weibliche Formen (Studentin), neutrale Formen (Studierende), Eingabefelder, editierbare Bereiche sowie code-, pre- und script-Inhalte. Wörter wie LinkedIn oder Sign_in stehen auf einer Ausnahmeliste.
+Bei den Partizipien wird nur ersetzt, was als Personenbezeichnung im Plural erkennbar ist (großgeschrieben, ohne Artikel oder mit Artikel im Plural, Fall wird aus dem Umfeld erschlossen: „den Zuschauenden“ wird zu „den Zuschauern“). Adjektive („die studierende Tochter“, „ein zuschauendes Kind“, „leitende Angestellte“), die weibliche Einzahl („die Studierende“, „eine Studierende“), die männliche Einzahl („ein Studierender“) und Titel wie „Studierende Frauen“ bleiben stehen. Es werden nur Partizipien aus einer Liste angefasst (Studierende, Zuschauende, Teilnehmende, Mitarbeitende, Lehrende, Forschende, Lesende, Nutzende, Besuchende, Wählende, Fahrende, Verkaufende, Kaufende, Spielende, Hörende, Pflegende, Sprechende, Schreibende, Leitende, Beratende, Prüfende, Bewerbende, Anbietende, Verbrauchende, Verwaltende, Vermietende, Mietende, Bewohnende, Entwickelnde, Programmierende, Gründende, Ausbildende, Bearbeitende, Wandernde, Lernende, Demonstrierende, auch in Zusammensetzungen wie Radfahrende). Wörter wie „Anwesende“ oder „Reisende“ bleiben unberührt. Weitere Wörter lassen sich in den Einstellungen als eigene Ersetzung eintragen.
+
+Nicht angefasst werden außerdem rein weibliche Formen (Studentin), Eingabefelder, editierbare Bereiche sowie code-, pre- und script-Inhalte. Wörter wie LinkedIn oder Sign_in stehen auf einer Ausnahmeliste.
 
 ## Installation
 

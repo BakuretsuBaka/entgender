@@ -5,7 +5,8 @@
   const $ = function (id) { return document.getElementById(id); };
   const SAMPLE =
     'Liebe Student*innen und Studenten, jede*r Ärzt:in und alle Patientinnen und Patienten ' +
-    'sind eingeladen. Die Lehrer/innen, der/die Schüler_in und die BürgerInnen kommen auch.';
+    'sind eingeladen. Die Lehrer/innen, der/die Schüler_in und die BürgerInnen kommen auch. ' +
+    'Auch alle Studierenden und Zuschauende sind willkommen.';
   let settings = E.mergeSettings();
   let saveTimer = 0;
 
@@ -20,7 +21,8 @@
         gap: $('r-gap').checked,
         doubles: $('r-doubles').checked,
         determiners: $('r-determiners').checked,
-        articles: $('r-articles').checked
+        articles: $('r-articles').checked,
+        participles: $('r-participles').checked
       },
       customReplacements: $('custom').value,
       ignoreWords: $('ignore').value
@@ -34,6 +36,7 @@
     $('r-doubles').checked = s.rules.doubles;
     $('r-determiners').checked = s.rules.determiners;
     $('r-articles').checked = s.rules.articles;
+    $('r-participles').checked = s.rules.participles;
     $('custom').value = s.customReplacements;
     $('ignore').value = s.ignoreWords;
   }
@@ -56,7 +59,7 @@
     saveTimer = setTimeout(save, 400);
   }
 
-  ['onlyGerman', 'sites', 'r-gap', 'r-doubles', 'r-determiners', 'r-articles', 'custom', 'ignore']
+  ['onlyGerman', 'sites', 'r-gap', 'r-doubles', 'r-determiners', 'r-articles', 'r-participles', 'custom', 'ignore']
     .forEach(function (id) {
       $(id).addEventListener('input', changed);
       $(id).addEventListener('change', changed);
