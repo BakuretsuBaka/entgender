@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Entgender: Einstellungen</title>
+  <link rel="stylesheet" href="ui.css">
+</head>
+<body class="options">
+  <h1>Entgender</h1>
+  <p class="muted">Entfernt Gendersprache auf Webseiten. Änderungen werden sofort gespeichert und auf geöffneten Seiten angewendet.</p>
+
+  <h2>Regeln</h2>
+  <label class="rule"><input type="checkbox" id="r-gap">
+    <span>Genderzeichen und Binnen-I<small>Student*innen, Student:innen, Student_innen, Student/innen, Student(inn)en, StudentInnen, Lehrer*in</small></span></label>
+  <label class="rule"><input type="checkbox" id="r-doubles">
+    <span>Doppelformen<small>Patientinnen und Patienten, Ärztin oder Arzt (es bleibt die männliche Form)</small></span></label>
+  <label class="rule"><input type="checkbox" id="r-determiners">
+    <span>Artikel mit Genderzeichen<small>jede*r, jedeR, ein*e, eine*n</small></span></label>
+  <label class="rule"><input type="checkbox" id="r-articles">
+    <span>Artikel und Pronomen mit Schrägstrich<small>der/die Lehrer, er/sie, seine/ihre</small></span></label>
+  <label class="rule"><input type="checkbox" id="onlyGerman">
+    <span>Nur auf deutschen Seiten arbeiten<small>Seiten mit einer anderen Sprachangabe im lang-Attribut werden übersprungen</small></span></label>
+
+  <h2>Testfeld</h2>
+  <div class="grid">
+    <div><p class="muted">Eingabe</p><textarea id="in" class="prose"></textarea></div>
+    <div><p class="muted">Ergebnis</p><textarea id="out" class="prose" readonly></textarea></div>
+  </div>
+
+  <h2>Eigene Ersetzungen</h2>
+  <p class="muted">Eine Regel pro Zeile im Format <code>alt = neu</code>. Ganze Wörter, Groß- und Kleinschreibung wird beachtet. Zeilen mit # am Anfang sind Kommentare. Eigene Ersetzungen laufen vor allen anderen Regeln.</p>
+  <textarea id="custom" spellcheck="false" placeholder="Studierende = Studenten"></textarea>
+
+  <h2>Ausnahmen</h2>
+  <p class="muted">Wörter oder Textstücke, in denen nichts verändert werden soll (ein Eintrag pro Zeile).</p>
+  <textarea id="ignore" spellcheck="false" placeholder="LinkedIn"></textarea>
+
+  <h2>Deaktivierte Seiten</h2>
+  <p class="muted">Eine Domain pro Zeile, z. B. <code>example.com</code> (gilt auch für Unterdomains).</p>
+  <textarea id="sites" spellcheck="false"></textarea>
+
+  <p style="margin-top:24px"><button id="reset">Auf Standard zurücksetzen</button><span id="status"></span></p>
+
+  <script src="rules.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+name: Release
+
+# Wird durch ein Tag wie v1.0.1 ausgelöst. Die Firefox-ID kommt aus der
+# Repository-Variable GECKO_ID (Settings > Secrets and variables > Actions > Variables).
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm test
+      - name: Pakete bauen
+        env:
+          GECKO_ID: ${{ vars.GECKO_ID }}
+        run: python3 tools/build.py
+      - name: Firefox-Paket prüfen
+        run: npx --yes web-ext lint --source-dir dist/firefox --warnings-as-errors
+      - name: Release erstellen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/*.zip --generate-notes --title "$GITHUB_REF_NAME"

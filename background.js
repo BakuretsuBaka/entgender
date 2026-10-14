@@ -1,0 +1,76 @@
+// Entgender: Service-Worker. Sammelt die Zähler aller Frames eines Tabs und
+// zeigt die Summe als Badge am Symbol der Erweiterung an (wie bei einem Adblocker).
+'use strict';
+
+const KEY = 'counts';
+let queue = Promise.resolve();
+
+async function load() {
+  const r = await chrome.storage.session.get(KEY);
+  return r[KEY] || {};
+}
+
+function save(o) {
+  return chrome.storage.session.set({ [KEY]: o });
+}
+
+function total(o, tabId) {
+  return Object.values(o[tabId] || {}).reduce(function (a, b) { return a + b; }, 0);
+}
+
+function format(n) {
+  if (n <= 0) return '';
+  if (n >= 10000) return Math.round(n / 1000) + 'k';
+  if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+  return String(n);
+}
+
+async function setBadge(tabId, n) {
+  try {
+    await chrome.action.setBadgeBackgroundColor({ tabId: tabId, color: '#2f7d4f' });
+    if (chrome.action.setBadgeTextColor) {
+      await chrome.action.setBadgeTextColor({ tabId: tabId, color: '#ffffff' });
+    }
+    await chrome.action.setBadgeText({ tabId: tabId, text: format(n) });
+  } catch (e) {
+    // Tab wurde inzwischen geschlossen.
+  }
+}
+
+function enqueue(fn) {
+  queue = queue.then(fn).catch(function () {});
+  return queue;
+}
+
+chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
+  if (!msg) return;
+
+  if (msg.type === 'entgender:count' && sender.tab) {
+    const tabId = sender.tab.id;
+    enqueue(async function () {
+      const o = await load();
+      if (msg.init && sender.frameId === 0) o[tabId] = {};
+      o[tabId] = o[tabId] || {};
+      o[tabId][sender.frameId] = msg.count;
+      await save(o);
+      await setBadge(tabId, total(o, tabId));
+    });
+    return;
+  }
+
+  if (msg.type === 'entgender:get') {
+    enqueue(async function () {
+      const o = await load();
+      sendResponse(total(o, msg.tabId));
+    });
+    return true;
+  }
+});
+
+chrome.tabs.onRemoved.addListener(function (tabId) {
+  enqueue(async function () {
+    const o = await load();
+    delete o[tabId];
+    await save(o);
+  });
+});

@@ -1,0 +1,10 @@
+{
+  "name": "entgender",
+  "version": "1.0.1",
+  "description": "Browser-Erweiterung, die Gendersprache auf Webseiten entfernt",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/rules.test.js"
+  }
+}
