@@ -29,6 +29,7 @@
   const attrOrig = new Map(); // Element -> Map(attribut -> [original, geschrieben])
   const pending = new Set();
   const pendingAttrs = new Set();
+  const styleOrig = new Map(); // <i>/<em> um "weiß" -> [ursprünglicher font-style, Priorität]
   let watched = new WeakSet();
   let opts = null;
   let active = false;
@@ -40,7 +41,33 @@
     return !!el && !!el.closest(SKIP);
   }
 
+  // Option "ältere Begriffe": kursiv gesetztes "weiß" (<i>, <em>) wieder normal setzen
+  function processItalic(node) {
+    if (!opts.rules.oldTerms) return;
+    const el = node.parentElement;
+    if (!el || (el.localName !== 'i' && el.localName !== 'em')) return;
+    if (el.childNodes.length !== 1 || styleOrig.has(el)) return;
+    const word = node.nodeValue.trim();
+    const before = el.previousSibling ? el.previousSibling.textContent : '';
+    const after = el.nextSibling ? el.nextSibling.textContent : '';
+    const out = E.whiteItalic(word, before, after);
+    if (out === null) return;
+    styleOrig.set(el, [el.style.getPropertyValue('font-style'), el.style.getPropertyPriority('font-style')]);
+    el.style.setProperty('font-style', 'normal', 'important');
+    if (out !== word && !textOrig.has(node)) {
+      const orig = node.nodeValue;
+      const next = orig.replace(word, out);
+      textOrig.set(node, [orig, next]);
+      node.nodeValue = next;
+    }
+  }
+
   function processText(node) {
+    processTextCore(node);
+    processItalic(node);
+  }
+
+  function processTextCore(node) {
     if (insideSkipped(node)) return;
     const t = node.nodeValue;
     const rec = textOrig.get(node);
@@ -111,12 +138,14 @@
   function prune() {
     textOrig.forEach(function (_, n) { if (!n.isConnected) textOrig.delete(n); });
     attrOrig.forEach(function (_, el) { if (!el.isConnected) attrOrig.delete(el); });
+    styleOrig.forEach(function (_, el) { if (!el.isConnected) styleOrig.delete(el); });
   }
 
   function currentCount() {
     prune();
     let n = textOrig.size;
     attrOrig.forEach(function (m) { n += m.size; });
+    styleOrig.forEach(function (_, el) { if (!textOrig.has(el.firstChild)) n++; });
     return n;
   }
 
@@ -178,6 +207,11 @@
       });
     });
     attrOrig.clear();
+    styleOrig.forEach(function (v, el) {
+      if (v[0]) el.style.setProperty('font-style', v[0], v[1]);
+      else el.style.removeProperty('font-style');
+    });
+    styleOrig.clear();
   }
 
   function start() {

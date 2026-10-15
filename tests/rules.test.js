@@ -290,6 +290,107 @@ test('mensch/frau ist standardmäßig aus', () => {
   assert.equal(E.DEFAULT_SETTINGS.rules.indefinite, false);
 });
 
+const onTerms = E.buildOptions({ rules: { oldTerms: true } });
+const onHarsh = E.buildOptions({ rules: { oldTermsHarsh: true } });
+const TERMS = [
+  ['Die geflüchteten Menschen kamen an.', 'Die Flüchtlinge kamen an.'],
+  ['Wir helfen Geflüchteten.', 'Wir helfen Flüchtlingen.'],
+  ['Mit geflüchteten Menschen sprechen.', 'Mit Flüchtlingen sprechen.'],
+  ['Viele Geflüchtete suchen Arbeit.', 'Viele Flüchtlinge suchen Arbeit.'],
+  ['Die Geflüchteten sind da.', 'Die Flüchtlinge sind da.'],
+  ['Der Wert der Geflüchteten', 'Der Wert der Flüchtlinge'],
+  ['Hilfe für Asylsuchende und Schutzsuchende.', 'Hilfe für Asylanten und Asylanten.'],
+  ['Die Asylsuchenden warten.', 'Die Asylanten warten.'],
+  ['Menschen mit Behinderung brauchen Hilfe.', 'Behinderte brauchen Hilfe.'],
+  ['Die Menschen mit Behinderung', 'Die Behinderten'],
+  ['Für Menschen mit Behinderungen', 'Für Behinderte'],
+  ['mit Menschen mit Behinderung', 'mit Behinderten'],
+  ['Rechte von Menschen mit intellektueller Beeinträchtigung', 'Rechte von geistig Behinderten'],
+  ['Menschen mit Autismus und autistische Menschen', 'Autisten und Autisten'],
+  ['Menschen mit psychischer Erkrankung', 'Psychisch Kranke'],
+  ['Hilfe für Menschen mit psychischer Erkrankung', 'Hilfe für psychisch Kranke'],
+  ['Hilfe für obdachlose Menschen und Menschen ohne Wohnung', 'Hilfe für Obdachlose und Obdachlose'],
+  ['Die obdachlosen Menschen', 'Die Obdachlosen'],
+  ['mit obdachlosen Menschen', 'mit Obdachlosen'],
+  ['Menschen ohne gesicherten Aufenthaltsstatus', 'Illegale Migranten'],
+  ['Hilfe für Menschen ohne gesicherten Aufenthaltsstatus', 'Hilfe für illegale Migranten'],
+  ['Rechte von trans Personen', 'Rechte von Transsexuellen'],
+  ['trans Menschen', 'Transsexuelle'],
+  ['versklavte Menschen', 'Sklaven'],
+  ['Betroffene sexualisierter Gewalt berichten', 'Vergewaltigungsopfer berichten'],
+  ['Die Überlebenden sexualisierter Gewalt', 'Die Vergewaltigungsopfer'],
+  ['den Betroffenen sexualisierter Gewalt', 'den Vergewaltigungsopfern'],
+  ['Hilfe für von Rassismus betroffene Menschen', 'Hilfe für Opfer von Rassismus'],
+  ['mit den von Rassismus betroffenen Menschen', 'mit den Opfern von Rassismus'],
+  ['Für BIPoC', 'Für nichtweiße Menschen'],
+  ['Wir sprechen mit PoC.', 'Wir sprechen mit schwarzen Menschen.'],
+  ['PoC und BIPoC und BI_PoC', 'Schwarze Menschen und nichtweiße Menschen und nichtweiße Menschen'],
+  ['Ableismus und ableistische Strukturen', 'Behindertenfeindlichkeit und behindertenfeindliche Strukturen'],
+  ['Menschen mit Einwanderungsgeschichte', 'Menschen mit Migrationshintergrund'],
+  ['Die Einwanderungsgeschichte der Familie', 'Der Migrationshintergrund der Familie'],
+  ['Mit einer Einwanderungsgeschichte', 'Mit einem Migrationshintergrund'],
+  ['Eine Einwanderungsgeschichte', 'Ein Migrationshintergrund'],
+  ['geschlechtsangleichende Maßnahmen', 'Geschlechtsumwandlungen'],
+  ['Seine geschlechtsangleichende Maßnahme', 'Seine Geschlechtsumwandlung'],
+  ['Ihre Transition und ihre trans Identität', 'Ihre Geschlechtsumwandlung und ihre trans Identität'],
+  ['Auch Schwarze Frauen und die Schwarzen kamen.', 'Auch schwarze Frauen und die Schwarzen kamen.'],
+  ['Schwarze Menschen leben hier.', 'Schwarze Menschen leben hier.'],
+  ['Es kamen viele Schwarze Menschen.', 'Es kamen viele schwarze Menschen.'],
+  ['Wo sind *weiße* Menschen?', 'Wo sind weiße Menschen?']
+];
+for (const [input, expected] of TERMS) {
+  test('ältere Begriffe: ' + input, () => { assert.equal(run(input, onTerms), expected); });
+}
+
+const TERMS_UNCHANGED = [
+  'Geflüchtete Familien kommen.',
+  'Eine Geflüchtete sagte nichts.',
+  'Dem Geflüchteten wurde geholfen.',
+  'die Betroffene sexualisierter Gewalt',
+  'Schwarzer Tee und Schwarzes Brett, Schwarze Witwe',
+  'Energietransition',
+  'Der PoC Exploit',
+  'Ein Proof of Concept (PoC) für die Schwachstelle',
+  'Meine geflüchtete Freundin',
+  'Menschen',
+  'Das Schwarze Meer',
+  'der Mensch'
+];
+for (const input of TERMS_UNCHANGED) {
+  test('ältere Begriffe: bleibt unverändert: ' + input, () => { assert.equal(run(input, onTerms), input); });
+}
+
+const HARSH = [
+  ['Das N-Wort ist verboten', 'Das Wort Neger ist verboten'],
+  ['Sie sagte N-Wort', 'Sie sagte Neger'],
+  ['das Z-Wort', 'das Wort Zigeuner'],
+  ['Ein Schokokuss und Schokoküsse und mit Schokoküssen', 'Ein Negerkuss und Negerküsse und mit Negerküssen'],
+  ['Paprikasauce und Sauce ungarischer Art', 'Zigeunersauce und Zigeunersauce'],
+  ['Paprikasoße', 'Zigeunersoße'],
+  ['Paprikaschnitzel', 'Zigeunerschnitzel'],
+  ['Sinti und Roma', 'Zigeuner'],
+  ['Hilfe für Sinti und Roma', 'Hilfe für Zigeuner'],
+  ['mit Sinti und Roma', 'mit Zigeunern']
+];
+for (const [input, expected] of HARSH) {
+  test('abwertende Begriffe (eigener Schalter): ' + input, () => { assert.equal(run(input, onHarsh), expected); });
+}
+
+test('ältere Begriffe sind standardmäßig aus und die Schalter sind unabhängig', () => {
+  for (const [input] of TERMS.concat(HARSH)) assert.equal(run(input), input);
+  assert.equal(E.DEFAULT_SETTINGS.rules.oldTerms, false);
+  assert.equal(E.DEFAULT_SETTINGS.rules.oldTermsHarsh, false);
+  assert.equal(run('Das N-Wort und Menschen mit Behinderung', onTerms), 'Das N-Wort und Behinderte');
+  assert.equal(run('Das N-Wort und Menschen mit Behinderung', onHarsh), 'Das Wort Neger und Menschen mit Behinderung');
+});
+
+test('Kursiv weiß: Großschreibung nur bei Hauptwort', () => {
+  assert.equal(E.whiteItalic('weißen', 'die ', ' sind da'), 'Weißen');
+  assert.equal(E.whiteItalic('weiße', 'Es gibt ', ' Menschen'), 'weiße');
+  assert.equal(E.whiteItalic('weiß', 'Ich ', ' es'), 'weiß');
+  assert.equal(E.whiteItalic('rot', 'die ', ' Menschen'), null);
+});
+
 test('Abkürzungen-Regel lässt sich abschalten', () => {
   const o = E.buildOptions({ rules: { abbreviations: false } });
   assert.equal(run('Entwickler (m/w/d)', o), 'Entwickler (m/w/d)');

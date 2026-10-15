@@ -18,7 +18,7 @@
     enabled: true,
     onlyGerman: false,
     disabledSites: [],
-    rules: { gap: true, doubles: true, determiners: true, articles: true, participles: true, abbreviations: true, indefinite: false },
+    rules: { gap: true, doubles: true, determiners: true, articles: true, participles: true, abbreviations: true, indefinite: false, oldTerms: false, oldTermsHarsh: false },
     customReplacements: '',
     ignoreWords: ''
   };
@@ -175,6 +175,9 @@
   const QUICK = new RegExp(
     P`[${MARK}\/(]|(?<![\p{L}])(?:mensch|frau)(?![\p{L}])|\p{Ll}(?:Innen|In|E|R|N|M|S)(?!\p{L})|\p{Ll}Innen(?=\p{Ll})|in(?:nen)?\s+(?:und|oder|sowie|bzw|beziehungsweise)|(?:und|oder|sowie|bzw\.?|beziehungsweise)\s+(?:\p{L}+\s+)?\p{Lu}\p{L}*in(?:nen)?(?!\p{L})|\p{Lu}\p{L}*ende[nrsm]?(?![\p{L}])`,
     'u');
+
+  const QUICK_TERMS = new RegExp(
+    P`[Gg]eflüchtet|Asylsuchend|Schutzsuchend|Behinderung|Beeinträchtigung|Erkrankung|Störung|[Aa]utis|bdachlos|ohnungslos|ohne\s+(?:Wohnung|Obdach|gesicherten|sicheren|legalen|festen)|[Tt]rans[ \-]|versklavt|sexualisierter|Rassismus|bleis|angleichende|Transition|Schwarz|PoC|POC|Colou?r|(?:Ein|Zu)wanderungsgeschichte|N[\-\u2010\u2011]Wort|Z[\-\u2010\u2011]Wort|Schokok|Paprika|ungarischer|Sinti|Roma|[*_]weiß`, 'u');
 
   function quickCheck(text) {
     return text.length >= 4 && QUICK.test(text);
@@ -514,6 +517,309 @@
   }
 
   // ---------------------------------------------------------------------
+  // Ältere Begriffe wiederherstellen (standardmäßig aus)
+  // ---------------------------------------------------------------------
+  //
+  // oldTerms:       Flüchtlinge, Behinderte, Obdachlose, Migrationshintergrund usw.
+  // oldTermsHarsh:  Begriffe, die heute als abwertend gelten (Neger, Zigeuner ...),
+  //                 getrennt schaltbar.
+  // Der Fall (Nominativ, Dativ ...) wird wie bei den Partizipien aus Artikel oder
+  // Präposition davor erschlossen. Bei Einzahl oder unklarem Fall bleibt der Text stehen.
+
+  const T_SG = new Set(['ein', 'eine', 'einem', 'einer', 'eines', 'einen', 'kein', 'keinem', 'keiner',
+    'keines', 'jede', 'jeder', 'jedem', 'jeden', 'jedes', 'dem', 'des', 'dieses', 'diesem', 'jenes',
+    'jenem', 'mein', 'dein', 'sein', 'ihr', 'unser', 'euer', 'meinem', 'deinem', 'seinem', 'ihrem',
+    'unserem', 'eurem']);
+  const T_WEAK = new Set(['die', 'diese', 'jene', 'welche', 'alle', 'beide', 'meine', 'deine', 'seine',
+    'ihre', 'unsere', 'eure', 'keine', 'sämtliche']);
+  const T_WEAKDAT = new Set(['den', 'allen', 'diesen', 'jenen', 'beiden', 'meinen', 'deinen', 'seinen',
+    'ihren', 'unseren', 'euren', 'keinen']);
+  const T_WEAKGEN = new Set(['der', 'aller', 'dieser', 'jener', 'beider', 'meiner', 'deiner', 'seiner',
+    'ihrer', 'unserer', 'eurer', 'keiner']);
+  const T_STRONG = new Set(['viele', 'einige', 'mehrere', 'wenige', 'zahlreiche', 'etliche', 'andere',
+    'weitere', 'manche', 'diverse', 'verschiedene', 'solche']);
+  const T_DAT = new Set(['vielen', 'einigen', 'mehreren', 'wenigen', 'zahlreichen', 'etlichen', 'anderen',
+    'weiteren', 'manchen', 'diversen', 'verschiedenen', 'solchen']);
+  const T_GEN = new Set(['vieler', 'einiger', 'mehrerer', 'weniger', 'zahlreicher', 'etlicher',
+    'anderer', 'weiterer', 'mancher', 'diverser', 'verschiedener', 'solcher']);
+
+  function termCtx(before) {
+    const cut = before.split(reClauseCut).pop();
+    const words = cut.trim().split(/\s+/).filter(Boolean).slice(-3).reverse();
+    let hops = 0;
+    for (let i = 0; i < words.length; i++) {
+      const l = words[i].toLowerCase();
+      if (T_SG.has(l)) return 'sg';
+      if (T_WEAK.has(l)) return 'weak';
+      if (T_WEAKDAT.has(l)) return 'weakdat';
+      if (T_WEAKGEN.has(l)) return 'weakgen';
+      if (T_STRONG.has(l)) return 'strong';
+      if (T_DAT.has(l) || DAT_PREP.has(l)) return 'dat';
+      if (T_GEN.has(l) || GEN_PREP.has(l)) return 'gen';
+      const adjLike = /^\p{Ll}{3,}(?:e|en|er|es|em)$/u.test(words[i]);
+      if (!adjLike || ++hops > 2) break;
+    }
+    return 'bare';
+  }
+
+  function isDative(kind) { return kind === 'dat' || kind === 'weakdat'; }
+
+  // Adjektivendung beim Hauptwort-Adjektiv (Behinderte, die Behinderten, mit Behinderten, wegen Behinderter)
+  function adjEnding(kind) {
+    if (kind === 'gen') return 'er';
+    if (kind === 'strong' || kind === 'bare') return 'e';
+    return 'en';
+  }
+
+  function startsSentence(str, offset) {
+    const head = str.slice(0, offset).replace(/[„“"»›‚'’(\[]+\s*$/u, '');
+    return /^\s*$/.test(head) || /[.!?…]\s*$/.test(head) || /\n\s*$/.test(head);
+  }
+
+  function lowerStart(s, str, offset) {
+    return startsSentence(str, offset) ? cap(s) : s;
+  }
+
+  function nounDative(word) { return /[ns]$/i.test(word) ? word : word + 'n'; }
+
+  // Ruft fn(groups, offset, str) für jeden Treffer auf (Rückgabe null: Treffer unverändert lassen).
+  function termReplace(t, re, opts, fn) {
+    return t.replace(re, function () {
+      const a = arguments;
+      const m = a[0];
+      if (ignored(m, opts)) return m;
+      const r = fn(Array.prototype.slice.call(a, 0, a.length - 2), a[a.length - 2], a[a.length - 1]);
+      return r === null || r === undefined ? m : r;
+    });
+  }
+
+  const NO = P`(?<![\p{L}\-])`;
+  const END = P`(?![\p{L}])`;
+  const reCapAfter = new RegExp(P`^\s+\p{Lu}`, 'u');
+
+  // Hauptwort-Quellen aus Adjektiv: Geflüchtete, Asylsuchende ... (nur Mehrzahl)
+  function nominalPlural(g, offset, str, matchLen) {
+    const suffix = { e: 'e', en: 'n', er: 'r' }[g[1]];
+    if (matchLen >= 0 && reCapAfter.test(str.slice(offset + matchLen))) return null; // "Geflüchtete Familien": Adjektiv
+    const kind = termCtx(str.slice(0, offset));
+    if (kind === 'sg') return null;
+    if (suffix === 'e' && kind === 'weak') return null;     // "die Geflüchtete": Einzahl, weiblich
+    if (suffix === 'r' && kind !== 'gen') return null;      // "Geflüchteter": Einzahl, männlich
+    if (suffix === 'e' && (kind === 'dat' || kind === 'weakdat' || kind === 'weakgen')) return null;
+    return { kind: kind, dative: isDative(kind) || (suffix === 'n' && kind === 'bare') };
+  }
+
+  // Quelle "... Menschen": nur Mehrzahl
+  function phrasePlural(str, offset) {
+    const kind = termCtx(str.slice(0, offset));
+    return kind === 'sg' ? null : kind;
+  }
+
+  const OLD_TERMS = [];
+
+  function addPhrase(source, build) {
+    OLD_TERMS.push([new RegExp(source, 'gu'), build]);
+  }
+
+  // Substantiviertes Adjektiv als Ziel: stem + Endung (Behindert -> Behinderte)
+  function adjTarget(stem) {
+    return function (g, offset, str) {
+      const kind = phrasePlural(str, offset);
+      if (!kind) return null;
+      const word = stem + adjEnding(kind);
+      return /^\p{Ll}/u.test(word) ? lowerStart(word, str, offset) : word;
+    };
+  }
+
+  function nounTarget(sing, dat) {
+    return function (g, offset, str) {
+      const kind = phrasePlural(str, offset);
+      if (!kind) return null;
+      return isDative(kind) ? dat : sing;
+    };
+  }
+
+  function adjNounTarget(adj, noun) {
+    return function (g, offset, str) {
+      const kind = phrasePlural(str, offset);
+      if (!kind) return null;
+      return lowerStart(adj + adjEnding(kind) + ' ' + noun, str, offset);
+    };
+  }
+
+  // Hauptwort aus Adjektiv-Mehrzahl
+  function nominalTarget(sing, dat, noCapCheck) {
+    return function (g, offset, str) {
+      const r = nominalPlural(g, offset, str, noCapCheck ? -1 : g[0].length);
+      if (!r) return null;
+      return r.dative ? dat : sing;
+    };
+  }
+
+  // --- einfache Ersetzungen ohne Beugung ---
+  const SIMPLE_TERMS = [
+    [P`${NO}[Aa]bleismus${END}`, 'Behindertenfeindlichkeit'],
+    [P`${NO}([Aa])bleistisch(\p{Ll}*)${END}`, function (g) {
+      return (g[1] === 'A' ? 'B' : 'b') + 'ehindertenfeindlich' + g[2];
+    }],
+    [P`(?<![\p{L}\-])[Gg]eschlechtsangleichende[n]?\s+Maßnahme(n)?${END}`, function (g) {
+      return 'Geschlechtsumwandlung' + (g[1] ? 'en' : '');
+    }]
+  ].map(function (e) { return [new RegExp(e[0], 'gu'), e[1]]; });
+
+  // --- Nominalphrasen ---
+  addPhrase(P`${NO}[Gg]eflüchtet(?:e|en)\s+Menschen${END}`, nounTarget('Flüchtlinge', 'Flüchtlingen'));
+  addPhrase(P`${NO}Geflüchtet(e|en|er)${END}`, nominalTarget('Flüchtlinge', 'Flüchtlingen'));
+  addPhrase(P`${NO}(?:Asyl|Schutz)suchend(e|en|er)${END}`, nominalTarget('Asylanten', 'Asylanten'));
+  addPhrase(P`${NO}[Mm]enschen\s+mit\s+(?:einer\s+)?Behinderung(?:en)?${END}`, adjTarget('Behindert'));
+  addPhrase(P`${NO}[Mm]enschen\s+mit\s+(?:einer\s+)?intellektuelle[rn]\s+Beeinträchtigung(?:en)?${END}`,
+    function (g, offset, str) {
+      const kind = phrasePlural(str, offset);
+      if (!kind) return null;
+      return lowerStart('geistig Behindert' + adjEnding(kind), str, offset);
+    });
+  addPhrase(P`${NO}(?:[Aa]utistische[n]?\s+Menschen|[Mm]enschen\s+mit\s+Autismus)${END}`,
+    nounTarget('Autisten', 'Autisten'));
+  addPhrase(P`${NO}[Mm]enschen\s+mit\s+(?:einer\s+)?psychische[rn]\s+(?:Erkrankung|Störung)(?:en)?${END}`,
+    function (g, offset, str) {
+      const kind = phrasePlural(str, offset);
+      if (!kind) return null;
+      return lowerStart('psychisch Krank' + adjEnding(kind), str, offset);
+    });
+  addPhrase(P`${NO}(?:[Oo]bdachlose[n]?\s+Menschen|[Ww]ohnungslose[n]?\s+Menschen|[Mm]enschen\s+ohne\s+(?:festen\s+)?(?:Wohnung|Obdach|Wohnsitz))${END}`,
+    adjTarget('Obdachlos'));
+  addPhrase(P`${NO}[Mm]enschen\s+ohne\s+(?:gesicherten|sicheren|legalen)\s+Aufenthalts(?:status|titel)${END}`,
+    adjNounTarget('illegal', 'Migranten'));
+  addPhrase(P`${NO}[Tt]rans[ \-](?:Menschen|Personen)${END}`, adjTarget('Transsexuell'));
+  addPhrase(P`${NO}[Vv]ersklavte[n]?\s+Menschen${END}`, nounTarget('Sklaven', 'Sklaven'));
+  addPhrase(P`${NO}(?:[Bb]etroffen|[Üü]berlebend)(e|en|er)\s+(?:von\s+)?sexualisierter\s+Gewalt${END}`,
+    nominalTarget('Vergewaltigungsopfer', 'Vergewaltigungsopfern', true));
+  addPhrase(P`${NO}[Vv]on\s+Rassismus\s+betroffene[n]?\s+Menschen${END}`,
+    nounTarget('Opfer von Rassismus', 'Opfern von Rassismus'));
+  addPhrase(P`${NO}(?:BI[_*:+ \-]?(?:PoCs?|POCs?)|PoCs?|People\s+of\s+Colou?r|Person\s+of\s+Colou?r)(?![\p{L}\-])`,
+    function (g, offset, str) {
+      // "PoC" kann auch "Proof of Concept" heißen
+      if (/(?:[Pp]roof[ \-]of[ \-][Cc]oncept|Konzeptnachweis|[Ee]xploit|Schwachstelle|Sicherheitslücke|CVE-)/.test(str)) return null;
+      const kind = phrasePlural(str, offset);
+      if (!kind) return null;
+      const adj = /^BI/.test(g[0]) ? 'nichtweiß' : 'schwarz';
+      return lowerStart(adj + adjEnding(kind) + ' Menschen', str, offset);
+    });
+
+  // Einwanderungsgeschichte -> Migrationshintergrund (weiblich wird männlich, Artikel passt sich an)
+  const FEM_BASE = { die: 'd', eine: 'ein', keine: 'kein', meine: 'mein', deine: 'dein', seine: 'sein',
+    ihre: 'ihr', unsere: 'unser', eure: 'euer' };
+  const FEM_BASE_ER = { der: 'd', einer: 'ein', keiner: 'kein', meiner: 'mein', deiner: 'dein',
+    seiner: 'sein', ihrer: 'ihr', unserer: 'unser', eurer: 'euer' };
+  function mascForm(base, c) {
+    if (base === 'd') return { nom: 'der', acc: 'den', dat: 'dem', gen: 'des' }[c];
+    const e = base === 'euer' && c !== 'nom' ? 'eur' : base;
+    return e + { nom: '', acc: 'en', dat: 'em', gen: 'es' }[c];
+  }
+  const FEM_ART = '[Dd]ie|[Ee]ine|[Kk]eine|[Mm]eine|[Dd]eine|[Ss]eine|[Ii]hre|[Uu]nsere|[Ee]ure|' +
+    '[Dd]er|[Ee]iner|[Kk]einer|[Mm]einer|[Dd]einer|[Ss]einer|[Ii]hrer|[Uu]nserer|[Ee]urer';
+  addPhrase(P`${NO}(?:(${FEM_ART})\s+)?(?:Einwanderungs|Zuwanderungs)geschichte${END}`, function (g, offset, str) {
+    const art = g[1];
+    const prev = lastWord(str.slice(0, offset));
+    let out = 'Migrationshintergrund';
+    if (!art) {
+      // Adjektiv direkt davor ("ihre schwierige Einwanderungsgeschichte"): Artikel nicht anpassbar
+      if (/^\p{Ll}{3,}(?:e|en|er|es|em)$/u.test(prev) && !DAT_PREP.has(prev) && !GEN_PREP.has(prev) &&
+          !ACC_PREP.has(prev)) return null;
+      return out;
+    }
+    const a = art.toLowerCase();
+    let c = null;
+    let base = null;
+    if (FEM_BASE[a]) { base = FEM_BASE[a]; c = ACC_PREP.has(prev) ? 'acc' : 'nom'; }
+    else { base = FEM_BASE_ER[a]; c = DAT_PREP.has(prev) ? 'dat' : 'gen'; }
+    let w = mascForm(base, c);
+    if (/^\p{Lu}/u.test(art)) w = cap(w);
+    if (c === 'gen') out = 'Migrationshintergrunds';
+    return w + ' ' + out;
+  });
+  addPhrase(P`${NO}Transition${END}`, function (g, offset, str) {
+    if (!/(?:[Tt]rans(?:[ \-]|\*|gender|sexuell)|[Gg]eschlecht|Hormon|Geschlechtsidentität)/u.test(str)) return null;
+    return 'Geschlechtsumwandlung';
+  });
+
+  // Schwarz als Adjektiv großgeschrieben vor Personenbezeichnungen: klein, außer am Satzanfang
+  const PERSON_NOUNS = P`(?:Menschen?|Frauen?|Männer[n]?|Mann|Personen?|Kinder[n]?|Jugendliche[nr]?|Mädchen|Jungen?|Deutsche[nr]?|Amerikaner(?:innen)?|Bevölkerung|Community|Gemeinschaft|Kolleg(?:en|e)|Studenten|Schüler[n]?|Aktivisten|Künstler[n]?|Autoren|Lehrer[n]?|Eltern|Familien?|Briten|Bürger[n]?|Migranten|Frauen|Aktivistinnen|Stimmen|Perspektiven?)`;
+  const reSchwarz = new RegExp(P`${NO}Schwarz(e|en|er|es|em)(\s+${PERSON_NOUNS})${END}`, 'gu');
+
+  // *weiß* in Textform: Sternchen oder Unterstriche um das Wort entfernen
+  const reWeissMark = new RegExp(P`(?<![\p{L}])[*_](weiß(?:e|en|er|es|em)?)[*_](?![\p{L}])`, 'gu');
+
+  function oldTerms(t, opts) {
+    for (let i = 0; i < SIMPLE_TERMS.length; i++) {
+      t = termReplace(t, SIMPLE_TERMS[i][0], opts, function (g) {
+        const f = SIMPLE_TERMS[i][1];
+        return typeof f === 'function' ? f(g) : f;
+      });
+    }
+    for (let i = 0; i < OLD_TERMS.length; i++) {
+      t = termReplace(t, OLD_TERMS[i][0], opts, OLD_TERMS[i][1]);
+    }
+    t = termReplace(t, reSchwarz, opts, function (g, offset, str) {
+      if (startsSentence(str, offset)) return null;
+      return 'schwarz' + g[1] + g[2];
+    });
+    t = t.replace(reWeissMark, '$1');
+    return t;
+  }
+
+  // --- Begriffe, die heute als abwertend gelten (eigener Schalter) ---
+  const HARSH = [];
+  function addHarsh(source, build) { HARSH.push([new RegExp(source, 'gu'), build]); }
+
+  addHarsh(P`(?<![\p{L}])([Dd]as\s+)?N[\-‐‑]Wort${END}`, function (g) {
+    return g[1] ? g[1] + 'Wort Neger' : 'Neger';
+  });
+  addHarsh(P`(?<![\p{L}])([Dd]as\s+)?Z[\-‐‑]Wort${END}`, function (g) {
+    return g[1] ? g[1] + 'Wort Zigeuner' : 'Zigeuner';
+  });
+  addHarsh(P`${NO}Schokok(uss|üsse|üssen)${END}`, function (g) {
+    return 'Negerk' + g[1];
+  });
+  addHarsh(P`${NO}(?:Paprika(sauce|soße)|(?:Sauce|Soße) ungarischer Art)${END}`, function (g) {
+    const soße = /oße/.test(g[0]);
+    return 'Zigeuner' + (soße ? 'soße' : 'sauce');
+  });
+  addHarsh(P`${NO}(?:Paprikaschnitzel|Schnitzel ungarischer Art)${END}`, function () {
+    return 'Zigeunerschnitzel';
+  });
+  addHarsh(P`${NO}(?:Sinti\s+und\s+Roma|Roma\s+und\s+Sinti)${END}`, function (g, offset, str) {
+    const kind = termCtx(str.slice(0, offset));
+    if (kind === 'sg') return null;
+    return isDative(kind) ? 'Zigeunern' : 'Zigeuner';
+  });
+
+  function oldTermsHarsh(t, opts) {
+    for (let i = 0; i < HARSH.length; i++) {
+      t = termReplace(t, HARSH[i][0], opts, HARSH[i][1]);
+    }
+    return t;
+  }
+
+  // "weiß" in Kursiv: Text des Elements prüfen. Gibt die neue Schreibweise zurück
+  // (null: nicht zuständig). Großgeschrieben wird, wenn das Wort als Hauptwort steht
+  // ("die weißen sind da", ohne folgendes Hauptwort) oder am Satzanfang.
+  function whiteItalic(word, before, after) {
+    const w = String(word).trim();
+    if (!/^weiß(?:e|en|er|es|em)?$/i.test(w)) return null;
+    before = String(before);
+    const nextWord = (String(after).match(/^\s*(\p{L}[\p{L}\-]*)/u) || [])[1];
+    if (nextWord && /^\p{Lu}/u.test(nextWord)) {
+      return /[.!?…]\s*$/.test(before) ? cap(w) : w; // Adjektiv vor Hauptwort
+    }
+    const kind = termCtx(before);
+    const plural = /^weiß(?:e|en|er)$/.test(w);
+    if (plural && (kind === 'weak' || kind === 'weakdat' || kind === 'weakgen' || kind === 'strong') &&
+        (!nextWord || /^\p{Ll}/u.test(nextWord))) return cap(w);
+    return /[.!?…]\s*$/.test(before) ? cap(w) : w;
+  }
+
+  // ---------------------------------------------------------------------
   // Einstiegspunkt
   // ---------------------------------------------------------------------
 
@@ -523,15 +829,24 @@
       opts.custom[i].re.lastIndex = 0;
       t = t.replace(opts.custom[i].re, function () { return opts.custom[i].to; });
     }
-    if (!quickCheck(t)) return t;
+    if (t.length < 4) return t;
     const r = opts.rules;
-    if (r.determiners) t = determiners(t);
-    if (r.articles) t = articles(t);
-    if (r.abbreviations) t = abbreviations(t, opts);
-    if (r.indefinite) t = indefinite(t, opts);
-    if (r.doubles) t = doubles(t, opts);
-    if (r.gap) t = gap(t, opts);
-    if (r.participles) t = participles(t, opts);
+    const gq = QUICK.test(t);
+    const tq = (r.oldTerms || r.oldTermsHarsh) && QUICK_TERMS.test(t);
+    if (!gq && !tq) return t;
+    if (gq) {
+      if (r.determiners) t = determiners(t);
+      if (r.articles) t = articles(t);
+      if (r.abbreviations) t = abbreviations(t, opts);
+      if (r.indefinite) t = indefinite(t, opts);
+      if (r.doubles) t = doubles(t, opts);
+      if (r.gap) t = gap(t, opts);
+      if (r.participles) t = participles(t, opts);
+    }
+    if (tq) {
+      if (r.oldTerms) t = oldTerms(t, opts);
+      if (r.oldTermsHarsh) t = oldTermsHarsh(t, opts);
+    }
     return t;
   }
 
@@ -542,6 +857,7 @@
     siteDisabled: siteMatches,
     entgender: entgender,
     quickCheck: quickCheck,
+    whiteItalic: whiteItalic,
     pluralMasc: pluralMasc,
     singularMasc: singularMasc
   };
