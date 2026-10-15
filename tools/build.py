@@ -101,7 +101,7 @@ USERSCRIPT_HEADER = """// ==UserScript==
     onlyGerman: false,
     // Seiten, auf denen nichts ersetzt wird, z. B. ['example.com']
     disabledSites: [],
-    rules: { gap: true, doubles: true, determiners: true, articles: true, participles: true, abbreviations: true },
+    rules: { gap: true, doubles: true, determiners: true, articles: true, participles: true, abbreviations: true, indefinite: false },
     // Eigene Ersetzungen, eine pro Zeile: 'alt = neu'
     customReplacements: '',
     // Wörter, die nie angefasst werden, durch Komma oder Zeilenumbruch getrennt

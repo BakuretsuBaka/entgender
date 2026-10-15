@@ -18,7 +18,7 @@
     enabled: true,
     onlyGerman: false,
     disabledSites: [],
-    rules: { gap: true, doubles: true, determiners: true, articles: true, participles: true, abbreviations: true },
+    rules: { gap: true, doubles: true, determiners: true, articles: true, participles: true, abbreviations: true, indefinite: false },
     customReplacements: '',
     ignoreWords: ''
   };
@@ -173,7 +173,7 @@
   const reDetSing = new RegExp(P`(?<![\p{L}])(${DET_SING})(?:[${MARK}\/]e|E)(?![\p{L}])`, 'gu');
 
   const QUICK = new RegExp(
-    P`[${MARK}\/(]|\p{Ll}(?:Innen|In|E|R|N|M|S)(?!\p{L})|\p{Ll}Innen(?=\p{Ll})|in(?:nen)?\s+(?:und|oder|sowie|bzw|beziehungsweise)|(?:und|oder|sowie|bzw\.?|beziehungsweise)\s+(?:\p{L}+\s+)?\p{Lu}\p{L}*in(?:nen)?(?!\p{L})|\p{Lu}\p{L}*ende[nrsm]?(?![\p{L}])`,
+    P`[${MARK}\/(]|(?<![\p{L}])(?:mensch|frau)(?![\p{L}])|\p{Ll}(?:Innen|In|E|R|N|M|S)(?!\p{L})|\p{Ll}Innen(?=\p{Ll})|in(?:nen)?\s+(?:und|oder|sowie|bzw|beziehungsweise)|(?:und|oder|sowie|bzw\.?|beziehungsweise)\s+(?:\p{L}+\s+)?\p{Lu}\p{L}*in(?:nen)?(?!\p{L})|\p{Lu}\p{L}*ende[nrsm]?(?![\p{L}])`,
     'u');
 
   function quickCheck(text) {
@@ -235,6 +235,25 @@
     t = t.replace(reAbbrBr, function (m) { return ignored(m, opts) ? m : ''; });
     t = t.replace(reAbbrBare, function (m) { return ignored(m, opts) ? m : ''; });
     return t;
+  }
+
+  // ---------------------------------------------------------------------
+  // Unbestimmtes Pronomen: "mensch" und "frau" werden zu "man" (standardmäßig aus)
+  // ---------------------------------------------------------------------
+
+  const reManPair = new RegExp(
+    P`(?<![\p{L}])([Mm]an|[Mm]ensch|[Ff]rau)(?:[\/${MARK}](?:[Mm]an|[Mm]ensch|[Ff]rau))+(?![\p{L}])`, 'gu');
+  // Einzeln nur kleingeschrieben: großgeschrieben sind es Hauptwörter (Mensch, Frau).
+  const reManSingle = new RegExp(P`(?<![\p{L}])(?:mensch|frau)(?![\p{L}])`, 'gu');
+
+  function indefinite(t, opts) {
+    t = t.replace(reManPair, function (m, first) {
+      if (ignored(m, opts)) return m;
+      const hasMan = /(?:^|[^\p{L}])[Mm]an(?![\p{L}])/u.test(m);
+      if (/^\p{Lu}/u.test(first) && !hasMan) return m;
+      return /^\p{Lu}/u.test(first) ? 'Man' : 'man';
+    });
+    return t.replace(reManSingle, function (m) { return ignored(m, opts) ? m : 'man'; });
   }
 
   // Wie String.replace, aber ein abgelehnter Treffer (Rückgabe null) verbraucht
@@ -509,6 +528,7 @@
     if (r.determiners) t = determiners(t);
     if (r.articles) t = articles(t);
     if (r.abbreviations) t = abbreviations(t, opts);
+    if (r.indefinite) t = indefinite(t, opts);
     if (r.doubles) t = doubles(t, opts);
     if (r.gap) t = gap(t, opts);
     if (r.participles) t = participles(t, opts);

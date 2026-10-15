@@ -24,7 +24,8 @@
         determiners: $('r-determiners').checked,
         articles: $('r-articles').checked,
         participles: $('r-participles').checked,
-        abbreviations: $('r-abbreviations').checked
+        abbreviations: $('r-abbreviations').checked,
+        indefinite: $('r-indefinite').checked
       },
       customReplacements: $('custom').value,
       ignoreWords: $('ignore').value
@@ -40,6 +41,7 @@
     $('r-articles').checked = s.rules.articles;
     $('r-participles').checked = s.rules.participles;
     $('r-abbreviations').checked = s.rules.abbreviations;
+    $('r-indefinite').checked = s.rules.indefinite;
     $('custom').value = s.customReplacements;
     $('ignore').value = s.ignoreWords;
   }
@@ -62,7 +64,7 @@
     saveTimer = setTimeout(save, 400);
   }
 
-  ['onlyGerman', 'sites', 'r-gap', 'r-doubles', 'r-determiners', 'r-articles', 'r-participles', 'r-abbreviations', 'custom', 'ignore']
+  ['onlyGerman', 'sites', 'r-gap', 'r-doubles', 'r-determiners', 'r-articles', 'r-participles', 'r-abbreviations', 'r-indefinite', 'custom', 'ignore']
     .forEach(function (id) {
       $(id).addEventListener('input', changed);
       $(id).addEventListener('change', changed);

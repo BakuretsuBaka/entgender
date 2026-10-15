@@ -265,6 +265,31 @@ test('Ausnahmen werden nicht angefasst', () => {
   assert.equal(run('Student*innen und Lehrer*innen', o), 'Student*innen und Lehrer');
 });
 
+const onIndef = E.buildOptions({ rules: { indefinite: true } });
+const INDEF = [
+  ['wenn mensch das will', 'wenn man das will'],
+  ['Wenn frau das will, dann geht es.', 'Wenn man das will, dann geht es.'],
+  ['man/frau kann das', 'man kann das'],
+  ['Man/frau kann das', 'Man kann das'],
+  ['frau/man weiß', 'man weiß'],
+  ['mensch/frau muss', 'man muss'],
+  ['mensch*frau', 'man'],
+  ['Mensch', 'Mensch'],
+  ['Die Frau kommt.', 'Die Frau kommt.'],
+  ['der Mensch und die Frau', 'der Mensch und die Frau'],
+  ['Mensch/Frau', 'Mensch/Frau'],
+  ['Frauenhaus und Menschenrechte', 'Frauenhaus und Menschenrechte']
+];
+for (const [input, expected] of INDEF) {
+  test('mensch/frau an: ' + input, () => { assert.equal(run(input, onIndef), expected); });
+}
+
+test('mensch/frau ist standardmäßig aus', () => {
+  assert.equal(run('wenn mensch das will'), 'wenn mensch das will');
+  assert.equal(run('man/frau kann'), 'man/frau kann');
+  assert.equal(E.DEFAULT_SETTINGS.rules.indefinite, false);
+});
+
 test('Abkürzungen-Regel lässt sich abschalten', () => {
   const o = E.buildOptions({ rules: { abbreviations: false } });
   assert.equal(run('Entwickler (m/w/d)', o), 'Entwickler (m/w/d)');
