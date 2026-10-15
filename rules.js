@@ -823,7 +823,21 @@
   // Einstiegspunkt
   // ---------------------------------------------------------------------
 
+  // Unsichtbare Trennzeichen (Soft Hyphen, Zero-Width-Zeichen), die Seiten in Wörter einbauen
+  const INVISIBLE = /[\u00AD\u200B\u200C\u200D\u2060]/;
+  const INVISIBLE_ALL = /[\u00AD\u200B\u200C\u200D\u2060]/g;
+
   function entgender(text, opts) {
+    if (INVISIBLE.test(text)) {
+      // Erst ohne Trennzeichen prüfen: Wurde nichts geändert, bleibt der Originaltext erhalten.
+      const plain = text.replace(INVISIBLE_ALL, '');
+      const out = entgenderCore(plain, opts);
+      return out === plain ? text : out;
+    }
+    return entgenderCore(text, opts);
+  }
+
+  function entgenderCore(text, opts) {
     let t = text;
     for (let i = 0; i < opts.custom.length; i++) {
       opts.custom[i].re.lastIndex = 0;

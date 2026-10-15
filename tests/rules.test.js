@@ -10,6 +10,12 @@ const run = function (s, o) { return E.entgender(s, o || opts); };
 const CASES = [
   // Genderzeichen, Plural
   ['Student*innen', 'Studenten'],
+  // unsichtbare Silbentrennung (Soft Hyphen) und Zero-Width-Zeichen mitten im Wort
+  ['Ver\u00ADtei\u00ADdi\u00ADge\u00ADr*in\u00ADnen', 'Verteidiger'],
+  ['Lehrer*in\u00ADnen', 'Lehrer'],
+  ['Stu\u00ADdent*in\u00ADnen', 'Studenten'],
+  ['Student\u200B*innen', 'Studenten'],
+  ['Die Stu\u00ADdie\u00ADren\u00ADden', 'Die Studenten'],
   ['Student:innen', 'Studenten'],
   ['Student_innen', 'Studenten'],
   ['Student/innen', 'Studenten'],
@@ -192,6 +198,7 @@ for (const [input, expected] of CASES) {
 }
 
 const UNCHANGED = [
+  'Kran\u00ADken\u00ADschwes\u00ADter',
   'Studentin',
   'Lehrerinnen',
   'Medizin und Medizinern',
