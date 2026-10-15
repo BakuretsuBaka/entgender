@@ -128,6 +128,24 @@
     } catch (e) { /* Markierung ist optional */ }
   }
 
+  // Ranges überleben nicht jede Änderung der Seite: Setzt ein Skript den Text neu (auch mit gleichem Wert)
+  // oder wird der Knoten umgehängt (Listen sortieren, Elemente aus- und wieder einblenden), fallen sie
+  // in sich zusammen. Der Text selbst bleibt ersetzt, also muss die Markierung neu gesetzt werden.
+  function rangesIntact(node) {
+    const rs = rangesOf.get(node);
+    if (!rs || !rs.length) return false;
+    for (let i = 0; i < rs.length; i++) {
+      if (rs[i].startContainer !== node || rs[i].endContainer !== node || rs[i].collapsed) return false;
+    }
+    return true;
+  }
+
+  function refreshMarks(node, rec) {
+    if (!hlOn || !hlSupported() || !node.nodeValue || rangesIntact(node)) return;
+    dropRanges(node);
+    markRanges(node, rec);
+  }
+
   function clearHighlights() {
     rangesOf.clear();
     try {
@@ -149,7 +167,8 @@
     if (out === null) return;
     if (mode === 'detect') {
       // Erweiterung aus, Markieren an: nur rot markieren, nichts ändern
-      if (hlOn && hlSupported() && !rangesOf.has(node)) {
+      if (hlOn && hlSupported() && !rangesIntact(node)) {
+        dropRanges(node);
         try {
           hlSheet();
           const i = Math.max(0, node.nodeValue.indexOf(word));
@@ -171,8 +190,9 @@
       textOrig.set(node, rec);
       node.nodeValue = next;
       markRanges(node, rec);
-    } else if (hlOn && hlSupported() && !rangesOf.has(node)) {
+    } else if (hlOn && hlSupported() && !rangesIntact(node)) {
       // Nur die Kursivschrift fällt weg: das ganze Wort markieren
+      dropRanges(node);
       try {
         hlSheet();
         const i = node.nodeValue.indexOf(word);
@@ -195,7 +215,7 @@
     if (insideSkipped(node)) return;
     const t = node.nodeValue;
     const rec = textOrig.get(node);
-    if (rec && (rec.on ? rec.out : rec.o) === t) return;
+    if (rec && (rec.on ? rec.out : rec.o) === t) { refreshMarks(node, rec); return; }
     if (!t || t.length < 4) {
       if (rec) { textOrig.delete(node); dropRanges(node); }
       return;
@@ -274,7 +294,7 @@
   }
 
   function prune() {
-    textOrig.forEach(function (_, n) { if (!n.isConnected) { textOrig.delete(n); rangesOf.delete(n); } });
+    textOrig.forEach(function (_, n) { if (!n.isConnected) { textOrig.delete(n); dropRanges(n); } });
     attrOrig.forEach(function (_, el) { if (!el.isConnected) attrOrig.delete(el); });
     styleOrig.forEach(function (_, el) { if (!el.isConnected) styleOrig.delete(el); });
   }
