@@ -630,3 +630,16 @@ test('Phettberg-Gendern', () => {
   assert.equal(run('Die Lesys', nogap), 'Die Leser');
   assert.equal(E.mergeSettings().rules.phettberg, true);
 });
+
+test('Phettberg-Gendern: Wortliste der Quelle', () => {
+  const C = [
+    ['Menschy', 'Mensch'], ['Persony', 'Person'], ['Das Nothelfy', 'Der Nothelfer'], ['Nothelfys', 'Nothelfer'],
+    ['Das Hilfskrafty', 'Die Hilfskraft'], ['Demonstrantys', 'Demonstranten'], ['Das Lehrly', 'Der Lehrling'],
+    ['Die Ärztys', 'Die Ärzte'], ['Mit den Ärztys', 'Mit den Ärzten'], ['Das Kellny', 'Der Kellner'], ['Die Kellnys', 'Die Kellner'],
+    ['Die Rauchys', 'Die Raucher'], ['Das Rauchy', 'Der Raucher'], ['Das Kritiky', 'Der Kritiker'], ['Die Kritikys', 'Die Kritiker'],
+    ['Das Arzty', 'Der Arzt'], ['Die Extrovertiertys', 'Die Extrovertierten'], ['Deutschys', 'Deutsche'], ['Von den Deutschys', 'Von den Deutschen'],
+    ['Österreichys', 'Österreicher'], ['Gotty', 'Gott'], ['Bürgermeisty', 'Bürgermeister'], ['Bürgymeisty', 'Bürgermeister'],
+    ['Liebes Lesy,', 'Lieber Leser,'], ['Maler.innen', 'Maler'], ['Maler’innen', 'Maler']
+  ];
+  C.forEach(function (c) { assert.equal(run(c[0]), c[1], c[0]); });
+});

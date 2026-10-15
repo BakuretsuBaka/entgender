@@ -191,7 +191,7 @@
   const reDetSing = new RegExp(P`(?<![\p{L}])(${DET_SING})(?:[${MARK}\/]e|E)(?![\p{L}])`, 'gu');
 
   const QUICK = new RegExp(
-    P`[${MARK}\/(]|(?<![\p{L}])(?:mensch|frau)(?![\p{L}])|\p{Ll}(?:Innen|In|E|R|N|M|S)(?!\p{L})|\p{Ll}Innen(?=\p{Ll})|in(?:nen)?\s+(?:und|oder|sowie|bzw|beziehungsweise)|(?:und|oder|sowie|bzw\.?|beziehungsweise)\s+(?:\p{L}+\s+)?\p{Lu}\p{L}*in(?:nen)?(?!\p{L})|\p{Lu}\p{L}*ende[nrsm]?(?![\p{L}])`,
+    P`[${MARK}\/(]|\p{Ll}[.’']in(?:nen)?(?![\p{L}])|(?<![\p{L}])(?:mensch|frau)(?![\p{L}])|\p{Ll}(?:Innen|In|E|R|N|M|S)(?!\p{L})|\p{Ll}Innen(?=\p{Ll})|in(?:nen)?\s+(?:und|oder|sowie|bzw|beziehungsweise)|(?:und|oder|sowie|bzw\.?|beziehungsweise)\s+(?:\p{L}+\s+)?\p{Lu}\p{L}*in(?:nen)?(?!\p{L})|\p{Lu}\p{L}*ende[nrsm]?(?![\p{L}])`,
     'u');
 
   const QUICK_TERMS = new RegExp(
@@ -420,7 +420,11 @@
     return /^\p{Lu}/u.test(orig) ? cap(s) : s;
   }
 
+  // Maler.innen, Maler’innen: Punkt oder Apostroph als Trenner, nur mit Großbuchstaben davor
+  const reDotMark = /(?<![\p{L}])(\p{Lu}\p{Ll}{2,})[.’'](innen|in)(?![\p{L}])/gu;
+
   function gap(t, opts) {
+    t = t.replace(reDotMark, '$1*$2');
     t = t.replace(reCompoundSep, '').replace(reCompoundBI, '');
     t = t.replace(reParen, function (m, stem, offset, str) {
       if (ignored(m, opts) || IGNORE_STEMS.has(stem) || stem.length < 3) return m;
@@ -1220,71 +1224,104 @@
   // ---------------------------------------------------------------------
   // Entgendern nach Phettberg: Lesys (Plural), das Lehry (Singular)
   // Nur bekannte Personenbezeichnungen, damit Wörter wie Babys oder Partys unberührt bleiben.
+  // Singular: -er entfällt, sonst wird -y angehängt. Plural: -ys. Artikel: das / die.
   // ---------------------------------------------------------------------
 
-  const PH_ER = 'Leser Lehrer Schüler Arbeiter Mitarbeiter Nutzer Benutzer Bürger Wähler Zuschauer Zuhörer Hörer Fahrer Autofahrer Radfahrer Spieler Verkäufer Käufer Politiker Künstler Nachbar Mieter Vermieter Besucher Teilnehmer Anwohner Einwohner Bewohner Fußgänger Verbraucher Anbieter Gründer Unternehmer Berater Trainer Betreuer Pfleger Erzieher Händler Redner Sprecher Leiter Bäcker Schreiber Autor Moderator Direktor Professor Sänger Tänzer Maler Fotograf Journalist Aktivist Experte Kollege Kunde Wirt Student Patient Passant Kandidat Pilot Chef Freund Gast Mensch'.split(' ');
-  const PH_N = /^(?:Student|Patient|Passant|Kandidat|Kunde|Kollege|Experte|Journalist|Aktivist|Fotograf|Mensch)$/;
-  const PH = {};
-  PH_ER.forEach(function (b) {
-    const stem = /er$/.test(b) ? b.slice(0, -2) : /e$/.test(b) ? b.slice(0, -1) : b;
-    PH[stem] = b;
+  const PH_SG = {};
+  const PH_PL = {};
+  const PH_N = /^(?:Student|Patient|Passant|Kandidat|Kunde|Kollege|Experte|Journalist|Aktivist|Fotograf|Mensch|Demonstrant)$/;
+
+  function phAdd(base, pl, o) {
+    o = o || {};
+    const sg = o.sg || (/er$/.test(base) ? base.slice(0, -2) : /e$/.test(base) ? base.slice(0, -1) : base);
+    const ps = o.pl || (/er$/.test(pl) || /en$/.test(pl) ? pl.slice(0, -2) : /[es]$/.test(pl) ? pl.slice(0, -1) : pl);
+    PH_SG[sg] = { base: base, f: !!o.f, adj: !!o.adj };
+    PH_PL[ps] = { pl: pl, adj: !!o.adj };
+  }
+
+  ('Leser Lehrer Schüler Arbeiter Mitarbeiter Nutzer Benutzer Bürger Wähler Zuschauer Zuhörer Hörer Fahrer Autofahrer Radfahrer ' +
+   'Spieler Verkäufer Käufer Politiker Künstler Nachbar Mieter Vermieter Besucher Teilnehmer Anwohner Einwohner Bewohner Fußgänger ' +
+   'Verbraucher Anbieter Gründer Unternehmer Berater Trainer Betreuer Pfleger Erzieher Händler Redner Sprecher Leiter Bäcker Schreiber ' +
+   'Sänger Tänzer Maler Nothelfer Kellner Raucher Kritiker Österreicher Bürgermeister Wanderer Reisende Helfer Retter Schwimmer Läufer Lieferer')
+    .split(' ').forEach(function (w) { if (w !== 'Reisende') phAdd(w, w); });
+  phAdd('Bürgermeister', 'Bürgermeister', { sg: 'Bürgymeist', pl: 'Bürgymeist' });
+  [['Student', 'Studenten'], ['Patient', 'Patienten'], ['Passant', 'Passanten'], ['Kandidat', 'Kandidaten'], ['Demonstrant', 'Demonstranten'],
+   ['Journalist', 'Journalisten'], ['Aktivist', 'Aktivisten'], ['Fotograf', 'Fotografen'], ['Mensch', 'Menschen'], ['Kunde', 'Kunden'],
+   ['Kollege', 'Kollegen'], ['Experte', 'Experten'], ['Autor', 'Autoren'], ['Moderator', 'Moderatoren'], ['Direktor', 'Direktoren'],
+   ['Professor', 'Professoren'], ['Pilot', 'Piloten'], ['Wirt', 'Wirte'], ['Freund', 'Freunde'], ['Gast', 'Gäste'], ['Koch', 'Köche'],
+   ['Arzt', 'Ärzte'], ['Chef', 'Chefs'], ['Gott', 'Götter']].forEach(function (x) {
+    if (x[0] === 'Gott') { PH_SG.Gott = { base: 'Gott', f: false, adj: false }; return; }
+    phAdd(x[0], x[1]);
   });
-  const QUICK_PH = /\p{Lu}\p{Ll}+ys?(?![\p{L}])/u;
-  const rePh = new RegExp(P`(?:(?<![\p{L}])(das|dem|des|dieses|diesem|jedes|jedem|kein|keinem|ein|einem|eines)\s+)?(?<![\p{L}])(\p{Lu}\p{Ll}+?)(ys|y)(?![\p{L}])`, 'giu');
+  phAdd('Lehrling', 'Lehrlinge', { sg: 'Lehrl', pl: 'Lehrl' });
+  [['Person', 'Personen'], ['Hilfskraft', 'Hilfskräfte'], ['Fachkraft', 'Fachkräfte'], ['Lehrkraft', 'Lehrkräfte'], ['Pflegekraft', 'Pflegekräfte']]
+    .forEach(function (x) { phAdd(x[0], x[1], { f: true }); });
+  // Substantivierte Adjektive: der Deutsche, ein Deutscher, die Deutschen
+  ['Deutscher', 'Extrovertierter', 'Introvertierter', 'Angestellter', 'Verwandter', 'Bekannter', 'Abgeordneter', 'Vorgesetzter']
+    .forEach(function (w) { phAdd(w, w.slice(0, -1), { adj: true }); });
+
+  // Artikel im Singular: [maskulin, feminin, Fall] ('G' Genitiv, 'D' Dativ, '' Nominativ/Akkusativ)
   const PH_DET = {
-    das: ['der', ''], dem: ['dem', 'D'], des: ['des', 'G'], dieses: ['dieser', ''], diesem: ['diesem', 'D'],
-    jedes: ['jeder', ''], jedem: ['jedem', 'D'], kein: ['kein', ''], keinem: ['keinem', 'D'],
-    ein: ['ein', ''], einem: ['einem', 'D'], eines: ['eines', 'G']
+    das: ['der', 'die', ''], dem: ['dem', 'der', 'D'], des: ['des', 'der', 'G'],
+    dieses: ['dieser', 'diese', ''], diesem: ['diesem', 'dieser', 'D'], jedes: ['jeder', 'jede', ''], jedem: ['jedem', 'jeder', 'D'],
+    kein: ['kein', 'keine', ''], keinem: ['keinem', 'keiner', 'D'], ein: ['ein', 'eine', ''], einem: ['einem', 'einer', 'D'],
+    eines: ['eines', 'einer', 'G']
   };
+  const PH_DEF = /^(?:das|dem|des|dieses|diesem|jedes|jedem)$/i;
+  const PH_WEAKPL = /^(?:die|diese|alle|jene|beide|manche|solche|welche|unsere|meine|deine|seine|ihre|eure|den|dem)$/i;
+  const QUICK_PH = /\p{Lu}\p{Ll}+ys?(?![\p{L}])/u;
+  const PH_DETS = Object.keys(PH_DET).reduce(function (a, k) { return a.concat(k, k.charAt(0).toUpperCase() + k.slice(1)); }, []).join('|');
+  const rePh = new RegExp(P`(?<![\p{L}])(?:(${PH_DETS})(\s+))?(?:(\p{L}\p{Ll}{2,}e[sn]?)(\s+))?(?<![\p{L}])(\p{Lu}\p{Ll}*?)(ys|y)(?![\p{L}])`, 'gu');
 
   function phettberg(t) {
-    let n = 0;
-    const out = t.replace(rePh, function (m, det, stem, end) {
-      const base = PH[stem];
-      if (!base) return m;
-      const pre = /^\p{Lu}/u.test(det || '') ? 1 : 0;
-      const cap = function (w) { return pre ? w.charAt(0).toUpperCase() + w.slice(1) : w; };
-      if (end.toLowerCase() === 'ys' && !(det && PH_DET[det.toLowerCase()] && PH_DET[det.toLowerCase()][1] === 'G')) {
-        if (det) return m; // "dem Lehrys" o. Ä.: unklar
-        n++;
-        const pl = /er$/.test(base) ? base : /e$/.test(base) ? base.slice(0, -1) : base;
-        return pl + '*innen';
+    return t.replace(rePh, function (m, det, sp1, adj, sp2, stem, end, offset, str) {
+      const ys = end === 'ys';
+      const pre = (det ? det + sp1 : '') + (adj ? adj + sp2 : '');
+      const ctx = str.slice(0, offset) + pre;
+      const d = det ? PH_DET[det.toLowerCase()] : null;
+      if (ys && !(d && d[2] === 'G')) {
+        // Plural
+        const e = PH_PL[stem];
+        if (!e || det) return m;
+        let w = e.pl;
+        const words = ctx.split(reClauseCut).pop().trim().split(/\s+/).filter(Boolean).slice(-2);
+        if (e.adj) {
+          if (pluralDative(ctx) || words.some(function (x) { return PH_WEAKPL.test(x); })) w = w + 'n';
+        } else if (pluralDative(ctx)) {
+          w = dativePlural(w);
+        }
+        return pre + w;
       }
-      if (!det) return m;
-      const d = PH_DET[det.toLowerCase()];
-      const gen = end.toLowerCase() === 'ys';
-      if (gen !== (d[1] === 'G')) return m;
-      n++;
-      const weak = PH_N.test(base);
-      let w = base;
-      if (d[1] === 'D' && weak) w = /e$/.test(base) ? base + 'n' : base + 'en';
-      if (gen) w = weak ? (/e$/.test(base) ? base + 'ns' : base + 'ens') : (/[sßxz]$/.test(base) ? base + 'es' : base + 's');
-      return (det === det.toLowerCase() && !pre ? d[0] : cap(d[0])) + ' ' + w;
+      // Singular
+      const e = PH_SG[stem];
+      if (!e) return m;
+      if (ys !== !!(d && d[2] === 'G')) return m;
+      const gen = ys;
+      const dat = !!(d && d[2] === 'D');
+      let word = e.base;
+      if (e.adj) {
+        if (d && PH_DEF.test(det)) word = e.base.slice(0, -1) + (dat || gen ? 'n' : '');
+        else if (d && (dat || gen)) word = e.base.slice(0, -2) + 'en';
+      } else if (!e.f) {
+        if (dat && PH_N.test(e.base)) word = /e$/.test(e.base) ? e.base + 'n' : e.base + 'en';
+        if (gen) word = PH_N.test(e.base) ? (/e$/.test(e.base) ? e.base + 'ns' : e.base + 'ens') : e.base + (/[sßxz]$/.test(e.base) ? 'es' : 's');
+      }
+      let det2 = '';
+      if (det) {
+        const dd = e.f ? d[1] : d[0];
+        det2 = (/^\p{Lu}/u.test(det) ? dd.charAt(0).toUpperCase() + dd.slice(1) : dd) + sp1;
+      }
+      let adj2 = '';
+      if (adj) {
+        adj2 = adj;
+        if (/es$/.test(adj) && adj.length > 4) adj2 = adj.slice(0, -2) + (e.f ? 'e' : 'er');
+        adj2 += sp2;
+      }
+      return det2 + adj2 + word;
     });
-    return [out, n];
   }
 
   function entgenderCore(text, opts, stats) {
-    if (opts.rules.phettberg && QUICK_PH.test(text)) {
-      const ph = phettberg(text);
-      if (ph[1]) {
-        // Die Nachbearbeitung läuft immer mit Genderzeichen-Regel, auch wenn sie sonst aus ist
-        const o2 = Object.assign({}, opts, { rules: Object.assign({}, opts.rules, { gap: true }) });
-        const tmp = stats ? {} : null;
-        const res = entgenderCore0(ph[0], o2, tmp);
-        if (stats) {
-          for (const k in tmp) stats[k] = (stats[k] || 0) + tmp[k];
-          stats.gap = Math.max(0, (stats.gap || 0) - ph[1]);
-          if (!stats.gap) delete stats.gap;
-          stats.phettberg = (stats.phettberg || 0) + ph[1];
-        }
-        return res;
-      }
-    }
-    return entgenderCore0(text, opts, stats);
-  }
-
-  function entgenderCore0(text, opts, stats) {
     let t = text;
     const run = function (name, fn) {
       const before = t;
@@ -1302,6 +1339,7 @@
     }
     if (t.length < 4) return t;
     const r = opts.rules;
+    if (r.phettberg && QUICK_PH.test(t)) run('phettberg', phettberg);
     const gq = QUICK.test(t);
     const tq = (r.oldTerms || r.oldTermsHarsh) && QUICK_TERMS.test(t);
     const aq = r.anglicisms && opts.german && QUICK_ANG.test(t);
