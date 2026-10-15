@@ -10,6 +10,19 @@ const run = function (s, o) { return E.entgender(s, o || opts); };
 const CASES = [
   // Genderzeichen, Plural
   ['Student*innen', 'Studenten'],
+  // Adjektive und substantivierte Adjektive mit Genderzeichen
+  ['Liebe*r Leser,', 'Lieber Leser,'],
+  ['Liebe*r Leser*in,', 'Lieber Leser,'],
+  ['Liebe/r Nutzer/in', 'Lieber Nutzer'],
+  ['Liebe:r Leser:in', 'Lieber Leser'],
+  ['LiebeR Kollege', 'Lieber Kollege'],
+  ['mit liebe*n Grüßen', 'mit lieben Grüßen'],
+  ['Liebe*m Freund', 'Liebem Freund'],
+  ['ein Angestellte*r', 'ein Angestellter'],
+  ['der Angestellte*r', 'der Angestellte'],
+  ['mit dem Angestellte*m', 'mit dem Angestellten'],
+  ['Wir suchen Rolle/n und Seite/n', 'Wir suchen Rollen und Seiten'],
+  ['Experte*r gesucht', 'Experte*r gesucht'],
   // Ergänzungsstrich
   ['Sprachexpertinnen und -experten', 'Sprachexperten'],
   ['Mit Sprachexpertinnen und -experten', 'Mit Sprachexperten'],

@@ -180,6 +180,11 @@
   // Dativ: einem/r, einer/m, jedem*r, diesem:r, einemR ... werden zu -em
   const reDetCase = new RegExp(P`(?<![\p{L}])(${DET})(?:em|er)[${MARK}\/]([rm])(?![\p{L}])`, 'gu');
   const reDetCaseBI = new RegExp(P`(?<![\p{L}])(${DET})(?:em|er)([RM])(?![\p{L}])`, 'gu');
+  // Adjektive und substantivierte Adjektive: Liebe*r, geehrte*r, Angestellte*n, LiebeR
+  const reAdjEnd = new RegExp(P`(?<![\p{L}])(\p{L}{2,}?)e[${MARK}\/]([rnms])(?![\p{L}])`, 'gu');
+  const reAdjBI = new RegExp(P`(?<![\p{L}])(\p{Lu}\p{Ll}{2,}?)e([RNMS])(?![\p{L}])`, 'gu');
+  // Hauptwörter, bei denen das e zum Wort gehört: "Experte*r" ist keine Endung
+  const E_NOUNS = /(?:experte|kollege|kunde|bote|junge|zeuge|erbe)$/i;
   const reDetSing = new RegExp(P`(?<![\p{L}])(${DET_SING})(?:[${MARK}\/]e|E)(?![\p{L}])`, 'gu');
 
   const QUICK = new RegExp(
@@ -197,12 +202,26 @@
   // Regelgruppen
   // ---------------------------------------------------------------------
 
+  // Nach bestimmtem Artikel gilt die schwache Endung: "der Angestellte*r" wird zu "der Angestellte",
+  // "dem Angestellte*m" zu "dem Angestellten"; sonst die starke ("ein Angestellter", "Lieber").
+  const WEAK_DET = /(?:^|[^\p{L}])(?:der|die|das|dem|den|des|dieser|diese|dieses|diesem|diesen|jeder|jede|jedes|jedem|jeden)\s+$/iu;
+  function adjEnd(m, st, e, off, str) {
+    if (E_NOUNS.test(st + 'e')) return m;
+    if (WEAK_DET.test(str.slice(0, off))) {
+      if (e === 'r') return st + 'e';
+      if (e === 'm' || e === 's') return st + 'en';
+    }
+    return st + 'e' + e;
+  }
+
   function determiners(t) {
     return t
       .replace(reDetCase, function (m, d) { return d + 'em'; })
       .replace(reDetCaseBI, function (m, d) { return d + 'em'; })
       .replace(reDetEnd, function (m, d, e) { return d + 'e' + e; })
       .replace(reDetBI, function (m, d, e) { return d + 'e' + e.toLowerCase(); })
+      .replace(reAdjEnd, function (m, st, e, off, str) { return adjEnd(m, st, e, off, str); })
+      .replace(reAdjBI, function (m, st, e, off, str) { return adjEnd(m, st, e.toLowerCase(), off, str); })
       .replace(reDetSing, function (m, d) { return d; });
   }
 
