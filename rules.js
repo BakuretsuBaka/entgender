@@ -1001,7 +1001,120 @@
     ['Check[ \\-‐‑]?out', 'Kasse', { from: 'mn', to: 'f', sfx: '', nocap: true }],
     ['(?:Shopping[ \\-‐‑]?)?Cart', 'Warenkorb', { from: 'm', to: 'm', pl: 'Warenkörbe', nocap: true }],
     ['Delivery', 'Lieferung', { from: 'f', to: 'f', sfx: '', nocap: true }],
-    ['Refund', 'Rückerstattung', { from: 'm', to: 'f', pl: 'Rückerstattungen' }]
+    ['Refund', 'Rückerstattung', { from: 'm', to: 'f', pl: 'Rückerstattungen' }],
+    ['Airbag', 'Prallkissen', { from: 'm', to: 'n', pl: 'Prallkissen' }],
+    ['Airline', 'Luftfahrtgesellschaft', { from: 'f', to: 'f', pl: 'Luftfahrtgesellschaften' }],
+    ['Airliner', 'Flugzeug', { from: 'm', to: 'n', pl: 'Flugzeuge', sameForm: 'sg', sfx: '(?:s|n)?' }],
+    ['Anti[ \\-‐‑]?[Aa]ging', 'Altershemmer', { from: 'n', to: 'm', pl: 'Altershemmer', nocap: true }],
+    ['Baby', 'Säugling', { from: 'n', to: 'm', pl: 'Säuglinge', sfx: '' }],
+    ['Bab(?:ys|ies)', 'Säuglinge', { plural: true, sfx: '' }],
+    ['Backup', 'Sicherungskopie', { from: 'n', to: 'f', pl: 'Sicherungskopien' }],
+    ['Bacon', 'Speck', { from: 'm', to: 'm', sfx: '' }],
+    ['Badminton', 'Federball', { from: 'n', to: 'm', sfx: '' }],
+    ['Barkeeper', 'Barmann', { from: 'm', to: 'm', pl: 'Barmänner', sameForm: 'sg', sfx: '(?:s|n)?' }],
+    ['Barkeeperin', 'Barfrau', { from: 'f', to: 'f', pl: 'Barfrauen', sfx: '(?:nen)?' }],
+    ['Base[ \\-‐‑]?[Cc]ap', 'Schirmkappe', { from: 'f', to: 'f', pl: 'Schirmkappen' }],
+    ['Beamer', 'Projektor', { from: 'm', to: 'm', pl: 'Projektoren', sameForm: 'sg', sfx: '(?:s|n)?' }],
+    ['Bestseller', 'Verkaufsschlager', { from: 'm', to: 'm', pl: 'Verkaufsschlager', sameForm: 'sg', sfx: '(?:s|n)?' }],
+    ['Bias', 'Befangenheit', { from: 'm', to: 'f', sfx: '' }],
+    ['Blackout', 'Aussetzer', { from: 'm', to: 'm', pl: 'Aussetzer' }],
+    ['Blockbuster', 'Kassenschlager', { from: 'm', to: 'm', pl: 'Kassenschlager', sameForm: 'sg', sfx: '(?:s|n)?' }],
+    ['B[\\-‐‑]?[Mm]ovie', 'B-Film', { from: 'm', to: 'm', pl: 'B-Filme' }],
+    ['Boarding', 'Einsteigen', { from: 'n', to: 'n', sfx: '' }],
+    ['Bodybuilder', 'Körperbildner', { from: 'm', to: 'm', pl: 'Körperbildner', sameForm: 'sg', sfx: '(?:s|n)?' }],
+    ['Bodyguard', 'Leibwache', { from: 'm', to: 'f', pl: 'Leibwachen' }],
+    ['Booklet', 'Beiheft', { from: 'n', to: 'n', pl: 'Beihefte' }],
+    ['Boss', 'Chef', { from: 'm', to: 'm', pl: 'Chefs', sfx: '(?:e)?', nocap: true }],
+    ['Briefing', 'Kurzeinweisung', { from: 'n', to: 'f', pl: 'Kurzeinweisungen' }],
+    ['Cache', 'Zwischenspeicher', { from: 'm', to: 'm', pl: 'Zwischenspeicher', sameForm: 'sg', sfx: '(?:s|n)?' }],
+    ['Call[ \\-‐‑]?[Bb]oy', 'Lustknabe', { from: 'm', to: 'm', weak: 'n', pl: 'Lustknaben' }],
+    ['Call[ \\-‐‑]?[Cc]enter', 'Telefonkundendienst', { from: 'n', to: 'm', pl: 'Telefonkundendienste', sameForm: 'sg', sfx: '(?:s|n)?' }],
+    ['Call[ \\-‐‑]?[Gg]irl', 'Dirne', { from: 'n', to: 'f', pl: 'Dirnen' }],
+    ['Camp', 'Lager', { from: 'n', to: 'n', pl: 'Lager', nocap: true }],
+    ['Camper', 'Zelter', { from: 'm', to: 'm', pl: 'Zelter', sameForm: 'sg', sfx: '(?:s|n)?' }],
+    ['Camping', 'Zelten', { from: 'n', to: 'n', sfx: '' }],
+    ['Cartoon', 'Zeichentrick', { from: 'm', to: 'm', pl: 'Zeichentrickfilme' }],
+    ['Casting', 'Darstellerauswahl', { from: 'n', to: 'f', pl: 'Darstellerauswahlen' }],
+    ['Catwalk', 'Laufsteg', { from: 'm', to: 'm', pl: 'Laufstege' }],
+    ['Champion', 'Sieger', { from: 'm', to: 'm', pl: 'Sieger', sameForm: 'sg', nocap: true }],
+    ['Chance', 'Gelegenheit', { from: 'f', to: 'f', pl: 'Gelegenheiten', sfx: '(?:n)?' }],
+    ['Cinema', 'Kino', { from: 'n', to: 'n', pl: 'Kinos', nocap: true }],
+    ['Cockpit', 'Führerkanzel', { from: 'n', to: 'f', pl: 'Führerkanzeln' }],
+    ['Comeback', 'Wiederkehr', { from: 'n', to: 'f', pl: null }],
+    ['Compilation', 'Zusammenstellung', { from: 'f', to: 'f', pl: 'Zusammenstellungen' }],
+    ['Computer', 'Rechner', { from: 'm', to: 'm', pl: 'Rechner', sameForm: 'sg', sfx: '(?:s|n)?', nocap: true }],
+    ['Contest', 'Wettbewerb', { from: 'm', to: 'm', pl: 'Wettbewerbe' }],
+    ['Crew', 'Mannschaft', { from: 'f', to: 'f', pl: 'Mannschaften' }],
+    ['Couch', 'Sofa', { from: 'f', to: 'n', pl: 'Sofas', sfx: '(?:es)?' }],
+    ['Design', 'Entwurf', { from: 'n', to: 'm', pl: 'Entwürfe', nocap: true }],
+    ['Directory', 'Verzeichnis', { from: 'n', to: 'n', sfx: '' }],
+    ['Directories', 'Verzeichnisse', { plural: true, sfx: '' }],
+    ['Disco', 'Tanzsaal', { from: 'f', to: 'm', pl: 'Tanzsäle' }],
+    ['Dreadlocks', 'Rastalocken', { plural: true, sfx: '' }],
+    ['Energy[ \\-‐‑]?[Dd]rink', 'Energiegetränk', { from: 'm', to: 'n', pl: 'Energiegetränke' }],
+    ['Entertainer', 'Unterhalter', { from: 'm', to: 'm', pl: 'Unterhalter', sameForm: 'sg', sfx: '(?:s|n)?' }],
+    ['Equipment', 'Ausstattung', { from: 'n', to: 'f', pl: 'Ausstattungen' }],
+    ['Event', 'Veranstaltung', { from: 'n', to: 'f', pl: 'Veranstaltungen', nocap: true }],
+    ['Eyecatcher', 'Hingucker', { from: 'm', to: 'm', pl: 'Hingucker', sameForm: 'sg', sfx: '(?:s|n)?' }],
+    ['E[\\-‐‑]?[Ll]earning', 'Bildung', { from: 'n', to: 'f', adj: 'elektronisch', sfx: '' }],
+    ['Fairness', 'Gerechtigkeit', { from: 'f', to: 'f', sfx: '' }],
+    ['Fan', 'Bewunderer', { from: 'm', to: 'm', pl: 'Bewunderer', nocap: true }],
+    ['Fantasy', 'Fantasie', { from: 'f', to: 'f', sfx: '', nocap: true }],
+    ['Fast[ \\-‐‑]?[Ff]ood', 'Schnellkost', { from: 'n', to: 'f', sfx: '' }],
+    ['File[ \\-‐‑]?[Ss]haring', 'Dateienaustausch', { from: 'n', to: 'm', sfx: '' }],
+    ['Flop', 'Reinfall', { from: 'm', to: 'm', pl: 'Reinfälle' }],
+    ['Flyer', 'Flugblatt', { from: 'm', to: 'n', pl: 'Flugblätter', sameForm: 'sg', sfx: '(?:s|n)?' }],
+    ['Friend[ \\-‐‑]?[Ll]ist', 'Freundesliste', { from: 'f', to: 'f', pl: 'Freundeslisten' }],
+    ['Guide', 'Anleitung', { from: 'mf', to: 'f', pl: 'Anleitungen', nocap: true }],
+    ['Headshot', 'Kopfschuss', { from: 'm', to: 'm', pl: 'Kopfschüsse' }],
+    ['Helicopter', 'Hubschrauber', { from: 'm', to: 'm', pl: 'Hubschrauber', sameForm: 'sg', sfx: '(?:s|n)?' }],
+    ['High[ \\-‐‑]?[Hh]eel', 'Stöckelschuh', { from: 'm', to: 'm', pl: 'Stöckelschuhe' }],
+    ['Image', 'Bild', { from: 'n', to: 'n', pl: 'Bilder', nocap: true }],
+    ['Inside[ \\-‐‑]?[Jj]ob', 'Regierungstat', { from: 'mn', to: 'f', pl: 'Regierungstaten' }],
+    ['Insiderhandel', 'Vorwissengeschäft', { from: 'm', to: 'n', pl: 'Vorwissengeschäfte' }],
+    ['Internet', 'Netz', { from: 'n', to: 'n', sfx: '(?:s)?', nocap: true }],
+    ['Job', 'Beschäftigung', { from: 'm', to: 'f', pl: 'Beschäftigungen', nocap: true }],
+    ['Lady', 'Dame', { from: 'f', to: 'f', sfx: '' }],
+    ['Ladies', 'Damen', { plural: true, sfx: '' }],
+    ['Laptop', 'Klapprechner', { from: 'm', to: 'm', pl: 'Klapprechner', sameForm: 'sg', sfx: '(?:s|n)?' }],
+    ['Lifestyle', 'Lebensart', { from: 'm', to: 'f', pl: 'Lebensarten', nocap: true }],
+    ['Lift[ \\-‐‑]?[Bb]oy', 'Fahrstuhljunge', { from: 'm', to: 'm', weak: 'n', pl: 'Fahrstuhljungen' }],
+    ['Limited[ \\-‐‑]?[Ee]dition', 'Auflage', { from: 'f', to: 'f', adj: 'begrenzt', pl: 'Auflagen' }],
+    ['Long[ \\-‐‑]?[Ss]leeve', 'Langarm', { from: 'm', to: 'm', pl: 'Langarme' }],
+    ['Lover', 'Liebhaber', { from: 'm', to: 'm', pl: 'Liebhaber', sameForm: 'sg', sfx: '(?:s|n)?' }],
+    ['Love[ \\-‐‑]?[Ss]tory', 'Liebesgeschichte', { from: 'f', to: 'f', sfx: '' }],
+    ['Love[ \\-‐‑]?[Ss]tories', 'Liebesgeschichten', { plural: true, sfx: '' }],
+    ['Lyrics', 'Liedtexte', { plural: true, sfx: '' }],
+    ['Mail[ \\-‐‑]?[Bb]ox', 'Postfach', { from: 'f', to: 'n', pl: 'Postfächer', sfx: '(?:en)?' }],
+    ['Mainstream', 'Hauptströmung', { from: 'm', to: 'f', sfx: '', nocap: true }],
+    ['Make[ \\-‐‑]?[Uu]p', 'Schminke', { from: 'n', to: 'f', pl: 'Schminken' }],
+    ['Marketing', 'Vermarktung', { from: 'n', to: 'f', sfx: '', nocap: true, nopre: true }],
+    ['Mind[ \\-‐‑]?[Mm]ap', 'Gedankenkarte', { from: 'f', to: 'f', pl: 'Gedankenkarten' }],
+    ['Mobbing', 'Schikane', { from: 'n', to: 'f', sfx: '' }],
+    ['Multiplayer[ \\-‐‑]?[Gg]ame', 'Mehrspielerspiel', { from: 'n', to: 'n', pl: 'Mehrspielerspiele' }],
+    ['Night[ \\-‐‑]?[Ll]ife', 'Nachtleben', { from: 'n', to: 'n', sfx: '' }],
+    ['Paperback', 'Taschenbuch', { from: 'n', to: 'n', pl: 'Taschenbücher' }],
+    ['Part', 'Teil', { from: 'm', to: 'm', pl: 'Teile', nocap: true }],
+    ['Part[ \\-‐‑]?[Tt]ime', 'Teilzeit', { from: 'f', to: 'f', sfx: '' }],
+    ['Party', 'Feier', { from: 'f', to: 'f', sfx: '' }],
+    ['Part(?:ys|ies)', 'Feiern', { plural: true, sfx: '' }],
+    ['Publisher', 'Herausgeber', { from: 'm', to: 'm', pl: 'Herausgeber', sameForm: 'sg', sfx: '(?:s|n)?' }],
+    ['Recycling', 'Wiederverwertung', { from: 'n', to: 'f', sfx: '' }],
+    ['Remake', 'Neuauflage', { from: 'n', to: 'f', pl: 'Neuauflagen' }],
+    ['Review', 'Rezension', { from: 'mn', to: 'f', pl: 'Rezensionen', nocap: true }],
+    ['Server', 'Wirtrechner', { from: 'm', to: 'm', pl: 'Wirtrechner', sameForm: 'sg', sfx: '(?:s|n)?', nocap: true }],
+    ['Sex[ \\-‐‑]?[Ss]hop', 'Sexladen', { from: 'm', to: 'm', pl: 'Sexläden' }],
+    ['Sex[ \\-‐‑]?[Ww]ork', 'Prostitution', { from: 'n', to: 'f', sfx: '' }],
+    ['Shredder', 'Reißwolf', { from: 'm', to: 'm', pl: 'Reißwölfe', sameForm: 'sg', sfx: '(?:s|n)?' }],
+    ['Small[ \\-‐‑]?[Tt]alk', 'Geplauder', { from: 'm', to: 'n', sfx: '(?:s)?' }],
+    ['Soft[ \\-‐‑]?[Cc]over', 'Taschenbuch', { from: 'n', to: 'n', pl: 'Taschenbücher' }],
+    ['Soft[ \\-‐‑]?[Ee]is', 'Weicheis', { from: 'n', to: 'n', sfx: '(?:es)?' }],
+    ['Stalker', 'Nachsteller', { from: 'm', to: 'm', pl: 'Nachsteller', sameForm: 'sg', sfx: '(?:s|n)?' }],
+    ['Stewardess', 'Flugbegleiterin', { from: 'f', to: 'f', pl: 'Flugbegleiterinnen', sfx: '(?:en)?' }],
+    ['Stretching', 'Dehnung', { from: 'n', to: 'f', pl: 'Dehnungen', sfx: '' }],
+    ['T[\\-‐‑][Ss]hirt', 'T-Hemd', { from: 'n', to: 'n', pl: 'T-Hemden' }],
+    ['Wallpaper', 'Hintergrundbild', { from: 'n', to: 'n', pl: 'Hintergrundbilder' }],
+    ['Whistleblower', 'Aufdecker', { from: 'm', to: 'm', pl: 'Aufdecker', sameForm: 'sg', sfx: '(?:s|n)?' }]
   ];
 
   const ANG_SPECS = ANG_RAW.map(function (r) {
@@ -1011,10 +1124,50 @@
     return sp;
   });
 
+
+  // Adjektive: cool -> lässig (Endungen bleiben: coole -> lässige)
+  const ANG_ADJ_RAW = [['[Cc]ool', 'lässig'], ['[Ff]air', 'gerecht'], ['[Gg]ay', 'schwul'], ['[Aa]usgepowert', 'ausgelaugt']];
+  const ANG_ADJ = ANG_ADJ_RAW.map(function (a) {
+    return [new RegExp(P`${ANG_PRE}(${a[0]})(e[nmrs]?)?${ANG_POST}`, 'gu'), a[1]];
+  });
+
+  // Substantivierte Adjektive: der Alien -> der Außerirdische, ein Alien -> ein Außerirdischer
+  const ANG_ADJN_RAW = [['Alien', 'Außerirdisch', true], ['Insider', 'Eingeweiht', false], ['Teenager', 'Jugendlich', false]];
+  const ADJN_SG = { der: 'def', den: 'def', dem: 'def', des: 'def', ein: 'ind', einen: 'ind', einem: 'ind', eines: 'ind',
+    kein: 'ind', keinen: 'ind', keinem: 'ind', keines: 'ind', mein: 'ind', meinen: 'ind', meinem: 'ind', meines: 'ind',
+    dein: 'ind', deinen: 'ind', deinem: 'ind', deines: 'ind', sein: 'ind', seinen: 'ind', seinem: 'ind', seines: 'ind',
+    unser: 'ind', unseren: 'ind', unserem: 'ind', unseres: 'ind', dieser: 'def', diesen: 'def', diesem: 'def', dieses: 'def',
+    jeder: 'def', jeden: 'def', jedem: 'def', jedes: 'def' };
+  const ADJN_WEAKPL = new Set(['die', 'den', 'der', 'diese', 'diesen', 'dieser', 'alle', 'allen', 'aller', 'meine', 'meinen', 'meiner',
+    'deine', 'deinen', 'deiner', 'seine', 'seinen', 'seiner', 'ihre', 'ihren', 'ihrer', 'unsere', 'unseren', 'unserer', 'keine', 'keinen', 'keiner']);
+  const ADJN_PL = new Set(['viele', 'vielen', 'einige', 'einigen', 'manche', 'manchen', 'mehrere', 'mehreren', 'zwei', 'drei', 'vier', 'fünf']);
+  const ADJN_DETS = Object.keys(ADJN_SG).concat(Array.from(ADJN_WEAKPL), Array.from(ADJN_PL))
+    .filter(function (w, i, arr) { return arr.indexOf(w) === i; })
+    .reduce(function (acc, w) { return acc.concat(w, w.charAt(0).toUpperCase() + w.slice(1)); }, []).join('|');
+  const ANG_ADJN = ANG_ADJN_RAW.map(function (a) {
+    return { re: new RegExp(P`${ANG_PRE}(?:(${ADJN_DETS})(\s+))?(${a[0]})([sn]?)${ANG_POST}`, 'gu'), stem: a[1] };
+  });
+
+  function adjNounReplace(t, sp, opts) {
+    return scan(sp.re, t, function (m, d0, ws, w, s, offset, str) {
+      if (ignored(m, opts)) return m;
+      const d = d0 ? d0.toLowerCase() : '';
+      const prefix = (d0 || '') + (ws || '');
+      if (d && ADJN_SG[d]) {
+        const nom = /^(?:der|ein|kein|mein|dein|sein|unser|dieser|jeder)$/.test(d);
+        return prefix + sp.stem + (ADJN_SG[d] === 'def' ? (nom ? 'e' : 'en') : (nom ? 'er' : 'en'));
+      }
+      if (!d && /(?:^|\s)(?:ist|war|wird|bin|bist|als)\s+$/i.test(str.slice(0, offset))) return prefix + sp.stem + 'er';
+      const weak = !!d && ADJN_WEAKPL.has(d);
+      const dative = pluralDative(str.slice(0, offset) + prefix);
+      return prefix + sp.stem + (weak || dative ? 'en' : 'e');
+    });
+  }
+
   const ANG_VERBS_RAW = [
     ['[Uu]pdaten', 'aktualisieren'], ['[Uu]ploaden', 'hochladen'], ['[Dd]ownloaden', 'herunterladen'],
     ['[Ee]inloggen', 'anmelden'], ['[Aa]usloggen', 'abmelden'], ['[Nn]etworken', 'vernetzen'],
-    ['[Rr]agebaiten', 'wutködern']
+    ['[Rr]agebaiten', 'wutködern'], ['[Cc]hillen', 'faulenzen'], ['[Rr]elaxen', 'entspannen'], ['[Dd]issen', 'verhöhnen']
   ];
   const ANG_VERBS = ANG_VERBS_RAW.map(function (v) { return [new RegExp(P`${ANG_PRE}${v[0]}${ANG_POST}`, 'gu'), v[1]]; });
 
@@ -1024,6 +1177,7 @@
   // Vorfilter: ein einziger Durchlauf, bevor die einzelnen Regeln laufen
   const QUICK_ANG = new RegExp(
     P`${ANG_PRE}(?:` + ANG_RAW.map(function (r) { return r[0]; }).join('|') + '|Short|' +
+    ANG_ADJ_RAW.map(function (a) { return a[0]; }).join('|') + '|' + ANG_ADJN_RAW.map(function (a) { return a[0]; }).join('|') + '|' +
     ANG_VERBS_RAW.map(function (v) { return v[0]; }).join('|') + ')', 'u');
 
   const CASE_NAMES = { D: 'dat', A: 'acc', G: 'gen' };
@@ -1032,6 +1186,11 @@
     return scan(sp.re, t, function (m, det, word, sfx, offset, str) {
       if (ignored(m, opts)) return m;
       const wordStart = offset + m.length - word.length - sfx.length;
+      if (sp.nopre && !det) {
+        // "Content Marketing": Teil eines Fachbegriffs, wenn davor direkt ein großgeschriebenes Wort steht
+        const pw = str.slice(0, offset).match(/(\p{L}[\p{L}\-]*)\s+$/u);
+        if (pw && /^\p{Lu}/u.test(pw[1])) return m;
+      }
       const beforeWord = str.slice(0, wordStart);
       const beforeDet = str.slice(0, offset);
       const to = sp.to || '';
@@ -1104,13 +1263,20 @@
       if (plural) {
         if (sp.pl === null) return m;
         const pl = sp.pl || sp.sg;
-        noun = sp.plural ? pl : (pluralDative(beforeWord) ? dativePlural(pl) : pl);
+        noun = pluralDative(beforeWord) ? dativePlural(pl) : pl;
       } else if (sp.weak) {
-        noun = sp.sg + (c !== 'nom' ? 'en' : '');
+        noun = sp.sg + (c !== 'nom' ? (sp.weak === 'n' ? 'n' : 'en') : '');
       } else if (c === 'gen' && /[mn]/.test(to)) {
         noun = sp.sg + genS(sp.sg);
       } else {
         noun = sp.sg;
+      }
+      if (sp.adj) {
+        // Adjektiv + Hauptwort ("begrenzte Auflage"): Endung nach Fall und Artikel
+        const acc = c === 'nom' || c === 'acc';
+        const e = plural ? (det || pluralDative(beforeWord) ? 'en' : 'e') : (det ? (acc ? 'e' : 'en') : (acc ? 'e' : 'er'));
+        const a = sp.adj + e;
+        noun = (det || !startsSentence(str, wordStart) ? a : cap(a)) + ' ' + noun;
       }
 
       if (newDetText) prefix = newDetText + prefix.slice(det.length);
@@ -1123,6 +1289,13 @@
     t = scan(reShort, t, function (m, site, sep, s) {
       return ignored(m, opts) ? null : site + sep + (s ? 'Kurzvideos' : 'Kurzvideo');
     });
+    for (let i = 0; i < ANG_ADJN.length; i++) t = adjNounReplace(t, ANG_ADJN[i], opts);
+    for (let i = 0; i < ANG_ADJ.length; i++) {
+      const to = ANG_ADJ[i][1];
+      t = scan(ANG_ADJ[i][0], t, function (m, w, e) {
+        return ignored(m, opts) ? null : matchCase(w, to) + (e || '');
+      });
+    }
     for (let i = 0; i < ANG_VERBS.length; i++) {
       const to = ANG_VERBS[i][1];
       t = scan(ANG_VERBS[i][0], t, function (m) {
