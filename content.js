@@ -138,7 +138,7 @@
 
   // Option "ältere Begriffe": kursiv gesetztes "weiß" (<i>, <em>) wieder normal setzen
   function processItalic(node) {
-    if (mode !== 'on' || !opts.rules.oldTerms) return;
+    if (mode === 'off' || !opts.rules.oldTerms) return;
     const el = node.parentElement;
     if (!el || (el.localName !== 'i' && el.localName !== 'em')) return;
     if (el.childNodes.length !== 1 || styleOrig.has(el)) return;
@@ -147,6 +147,21 @@
     const after = el.nextSibling ? el.nextSibling.textContent : '';
     const out = E.whiteItalic(word, before, after);
     if (out === null) return;
+    if (mode === 'detect') {
+      // Erweiterung aus, Markieren an: nur rot markieren, nichts ändern
+      if (hlOn && hlSupported() && !rangesOf.has(node)) {
+        try {
+          hlSheet();
+          const i = Math.max(0, node.nodeValue.indexOf(word));
+          const r = document.createRange();
+          r.setStart(node, i);
+          r.setEnd(node, i + word.length);
+          hlObject().add(r);
+          rangesOf.set(node, [r]);
+        } catch (e) { /* Markierung ist optional */ }
+      }
+      return;
+    }
     styleOrig.set(el, [el.style.getPropertyValue('font-style'), el.style.getPropertyPriority('font-style')]);
     el.style.setProperty('font-style', 'normal', 'important');
     if (out !== word && !textOrig.has(node)) {
@@ -156,6 +171,17 @@
       textOrig.set(node, rec);
       node.nodeValue = next;
       markRanges(node, rec);
+    } else if (hlOn && hlSupported() && !rangesOf.has(node)) {
+      // Nur die Kursivschrift fällt weg: das ganze Wort markieren
+      try {
+        hlSheet();
+        const i = node.nodeValue.indexOf(word);
+        const r = document.createRange();
+        r.setStart(node, Math.max(0, i));
+        r.setEnd(node, Math.max(0, i) + word.length);
+        hlObject().add(r);
+        rangesOf.set(node, [r]);
+      } catch (e) { /* Markierung ist optional */ }
     }
     addCount(el, 1);
   }
