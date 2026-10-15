@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Entgender",
   "short_name": "Entgender",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "description": "Entfernt Gendersprache auf Webseiten: Genderstern, Doppelpunkt, Binnen-I, Doppelformen. Open Source, ohne Datensammlung.",
   "permissions": ["storage"],
   "background": {

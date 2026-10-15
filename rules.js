@@ -159,6 +159,10 @@
   const reMascFirst = new RegExp(
     P`(?<![\p{L}])(?:(${ART})\s+)?(\p{Lu}\p{L}{2,})\s+${CONN}\s+(?:(${ART})\s+)?(\p{Lu}\p{L}{2,}?)${FEM}(?![\p{L}])`, 'gu');
 
+  // Ergänzungsstrich: "Sprachexpertinnen und -experten", "Lehrerin oder -lehrer"
+  const reDash = new RegExp(
+    P`(?<![\p{L}])(?:(${ART})\s+)?(\p{Lu}\p{L}{2,}?)(innen|in)\s+${CONN}\s+[\-\u2010\u2011\u2013]([\p{L}]{3,})(?![\p{L}])`, 'gu');
+
   const reCompoundSep = new RegExp(P`(?<=\p{Ll})(?:[${MARK}]|\/-?)innen(?=\p{Ll})`, 'gu');
   const reCompoundBI = new RegExp(P`(?<=\p{Ll})Innen(?=\p{Ll})`, 'gu');
   const reParen = new RegExp(P`(?<![\p{L}])(\p{Lu}\p{L}*)\(inn\)en(?![\p{L}])`, 'gu');
@@ -287,6 +291,17 @@
       let res = art ? art + ' ' + B : B;
       if (aArt && bArt && /^\p{Lu}/u.test(aArt)) res = cap(res);
       return res;
+    });
+    t = scan(reDash, t, function (m, aArt, stem, inn, B) {
+      if (ignored(m, opts)) return null;
+      for (let k = 0; k < stem.length; k++) {
+        if (!related(B, stem.slice(k))) continue;
+        let res = stem.slice(0, k) + (k ? B : cap(B));
+        const art = aArt && inn.toLowerCase() === 'in' ? fixArt(aArt) : aArt;
+        if (art) res = art + ' ' + res;
+        return res;
+      }
+      return null;
     });
     t = scan(reMascFirst, t, function (m, aArt, A, bArt, stem) {
       if (ignored(m, opts)) return null;

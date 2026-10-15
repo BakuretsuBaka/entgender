@@ -10,6 +10,15 @@ const run = function (s, o) { return E.entgender(s, o || opts); };
 const CASES = [
   // Genderzeichen, Plural
   ['Student*innen', 'Studenten'],
+  // Ergänzungsstrich
+  ['Sprachexpertinnen und -experten', 'Sprachexperten'],
+  ['Mit Sprachexpertinnen und -experten', 'Mit Sprachexperten'],
+  ['Lehrerinnen und -lehrer', 'Lehrer'],
+  ['Ärztinnen und -ärzte', 'Ärzte'],
+  ['mit den Ärztinnen und -ärzten', 'mit den Ärzten'],
+  ['Schülerinnen oder -schüler', 'Schüler'],
+  ['die Lehrerin oder -lehrer', 'der Lehrer'],
+  ['Die Studentinnen und -studenten sind da.', 'Die Studenten sind da.'],
   // unsichtbare Silbentrennung (Soft Hyphen) und Zero-Width-Zeichen mitten im Wort
   ['Ver\u00ADtei\u00ADdi\u00ADge\u00ADr*in\u00ADnen', 'Verteidiger'],
   ['Lehrer*in\u00ADnen', 'Lehrer'],
