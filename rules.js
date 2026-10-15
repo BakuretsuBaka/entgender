@@ -18,7 +18,7 @@
     enabled: true,
     onlyGerman: false,
     disabledSites: [],
-    rules: { gap: true, doubles: true, determiners: true, articles: true, participles: true },
+    rules: { gap: true, doubles: true, determiners: true, articles: true, participles: true, abbreviations: true },
     customReplacements: '',
     ignoreWords: ''
   };
@@ -144,7 +144,10 @@
   // Muster
   // ---------------------------------------------------------------------
 
-  const SEP = P`(?:[*:_·]|\/-?|\()`;
+  // Alle Zeichen, die als Gender-Zeichen verwendet werden (Stern, Doppelpunkt, Unterstrich,
+  // Mittelpunkte) samt typografischer Varianten.
+  const MARK = P`*∗＊﹡⋆:：꞉_＿·•‧∙⋅`;
+  const SEP = P`(?:[${MARK}]|\/-?|\()`;
   const FEM = P`(?:${SEP}?(innen|in)|(Innen|In))\)?`;
   const ART = P`(?:[Dd]er|[Dd]ie|[Dd]as|[Dd]en|[Dd]em|[Dd]es|[Ee]ine[mnrs]?|[Ee]in|[Aa]lle|[Aa]llen)`;
   const CONN = P`(?:und|oder|sowie|bzw\.|beziehungsweise|bzw)`;
@@ -156,21 +159,21 @@
   const reMascFirst = new RegExp(
     P`(?<![\p{L}])(?:(${ART})\s+)?(\p{Lu}\p{L}{2,})\s+${CONN}\s+(?:(${ART})\s+)?(\p{Lu}\p{L}{2,}?)${FEM}(?![\p{L}])`, 'gu');
 
-  const reCompoundSep = new RegExp(P`(?<=\p{Ll})(?:[*:_·]|\/-?)innen(?=\p{Ll})`, 'gu');
+  const reCompoundSep = new RegExp(P`(?<=\p{Ll})(?:[${MARK}]|\/-?)innen(?=\p{Ll})`, 'gu');
   const reCompoundBI = new RegExp(P`(?<=\p{Ll})Innen(?=\p{Ll})`, 'gu');
   const reParen = new RegExp(P`(?<![\p{L}])(\p{Lu}\p{L}*)\(inn\)en(?![\p{L}])`, 'gu');
   const reGap = new RegExp(
-    P`(?<![\p{L}])(?:([Dd]ie|[Ee]ine|[Dd]er|[Ee]iner)(\s+))?(\p{Lu}\p{L}*?)(?:(?:[*:_·]|\/-?|\()(innen|in)\)?|(?<=\p{Ll})(Innen|In))(?![\p{L}])`, 'gu');
+    P`(?<![\p{L}])(?:([Dd]ie|[Ee]ine|[Dd]er|[Ee]iner)(\s+))?(\p{Lu}\p{L}*?)(?:(?:[${MARK}]|\/-?|\()(innen|in)\)?|(?<=\p{Ll})(Innen|In))(?![\p{L}])`, 'gu');
 
-  const reDetEnd = new RegExp(P`(?<![\p{L}])(${DET})e[*:_·\/]([rnms])(?![\p{L}])`, 'gu');
+  const reDetEnd = new RegExp(P`(?<![\p{L}])(${DET})e[${MARK}\/]([rnms])(?![\p{L}])`, 'gu');
   const reDetBI = new RegExp(P`(?<![\p{L}])(${DET})e([RNMS])(?![\p{L}])`, 'gu');
   // Dativ: einem/r, einer/m, jedem*r, diesem:r, einemR ... werden zu -em
-  const reDetCase = new RegExp(P`(?<![\p{L}])(${DET})(?:em|er)[*:_·\/]([rm])(?![\p{L}])`, 'gu');
+  const reDetCase = new RegExp(P`(?<![\p{L}])(${DET})(?:em|er)[${MARK}\/]([rm])(?![\p{L}])`, 'gu');
   const reDetCaseBI = new RegExp(P`(?<![\p{L}])(${DET})(?:em|er)([RM])(?![\p{L}])`, 'gu');
-  const reDetSing = new RegExp(P`(?<![\p{L}])(${DET_SING})(?:[*:_·\/]e|E)(?![\p{L}])`, 'gu');
+  const reDetSing = new RegExp(P`(?<![\p{L}])(${DET_SING})(?:[${MARK}\/]e|E)(?![\p{L}])`, 'gu');
 
   const QUICK = new RegExp(
-    P`[*:_·\/(]|\p{Ll}(?:Innen|In|E|R|N|M|S)(?!\p{L})|\p{Ll}Innen(?=\p{Ll})|in(?:nen)?\s+(?:und|oder|sowie|bzw|beziehungsweise)|(?:und|oder|sowie|bzw\.?|beziehungsweise)\s+(?:\p{L}+\s+)?\p{Lu}\p{L}*in(?:nen)?(?!\p{L})|\p{Lu}\p{L}*ende[nrsm]?(?![\p{L}])`,
+    P`[${MARK}\/(]|\p{Ll}(?:Innen|In|E|R|N|M|S)(?!\p{L})|\p{Ll}Innen(?=\p{Ll})|in(?:nen)?\s+(?:und|oder|sowie|bzw|beziehungsweise)|(?:und|oder|sowie|bzw\.?|beziehungsweise)\s+(?:\p{L}+\s+)?\p{Lu}\p{L}*in(?:nen)?(?!\p{L})|\p{Lu}\p{L}*ende[nrsm]?(?![\p{L}])`,
     'u');
 
   function quickCheck(text) {
@@ -190,20 +193,48 @@
       .replace(reDetSing, function (m, d) { return d; });
   }
 
+  // Trennzeichen zwischen Artikel- und Pronomenpaaren: Schrägstrich oder Gender-Zeichen
+  const PS = P`[\/${MARK}]`;
+  const reArt = [
+    [P`(?<![\p{L}])([Dd])(?:er${PS}[Dd]ie|ie${PS}[Dd]er)(?=\s+\p{Lu})`, '$1er'],
+    [P`(?<![\p{L}])([Ee])in(?:${PS}[Ee]ine|e${PS}[Ee]in)(?=\s+\p{Lu})`, '$1in'],
+    [P`(?<![\p{L}])([Dd])(?:em${PS}[Dd]er|er${PS}[Dd]em)(?=\s+\p{Lu})`, '$1em'],
+    [P`(?<![\p{L}])([Dd])(?:es${PS}[Dd]er|er${PS}[Dd]es)(?=\s+\p{Lu})`, '$1es'],
+    [P`(?<![\p{L}])([Dd])(?:en${PS}[Dd]ie|ie${PS}[Dd]en)(?=\s+\p{Lu})`, '$1en'],
+    [P`(?<![\p{L}])([Ee])inem${PS}[Ee]iner(?=\s+\p{Lu})|(?<![\p{L}])([Ee])iner${PS}[Ee]inem(?=\s+\p{Lu})`,
+      function (m, x, y) { return (x || y) + 'inem'; }],
+    [P`(?<![\p{L}])([Ee])r${PS}[Ss]ie(?![\p{L}])`, '$1r'],
+    [P`(?<![\p{L}])([Ss])ie${PS}[Ee]r(?![\p{L}])`, function (m, x) { return x === 'S' ? 'Er' : 'er'; }],
+    [P`(?<![\p{L}])([Ii])hm${PS}[Ii]hr(?![\p{L}])`, '$1hm'],
+    [P`(?<![\p{L}])([Ii])hn${PS}[Ss]ie(?![\p{L}])`, '$1hn'],
+    [P`(?<![\p{L}])([Ss]ein)(e[mnrs]?)?${PS}[Ii]hr(?:e[mnrs]?)?(?![\p{L}])`, '$1$2']
+  ].map(function (e) { return [new RegExp(e[0], 'gu'), e[1]]; });
+
   function articles(t) {
-    return t
-      .replace(/(?<![\p{L}])([Dd])(?:er\/[Dd]ie|ie\/[Dd]er)(?=\s+\p{Lu})/gu, '$1er')
-      .replace(/(?<![\p{L}])([Ee])in(?:\/[Ee]ine|e\/[Ee]in)(?=\s+\p{Lu})/gu, '$1in')
-      .replace(/(?<![\p{L}])([Dd])(?:em\/[Dd]er|er\/[Dd]em)(?=\s+\p{Lu})/gu, '$1em')
-      .replace(/(?<![\p{L}])([Dd])(?:es\/[Dd]er|er\/[Dd]es)(?=\s+\p{Lu})/gu, '$1es')
-      .replace(/(?<![\p{L}])([Dd])(?:en\/[Dd]ie|ie\/[Dd]en)(?=\s+\p{Lu})/gu, '$1en')
-      .replace(/(?<![\p{L}])([Ee])inem\/[Ee]iner(?=\s+\p{Lu})|(?<![\p{L}])([Ee])iner\/[Ee]inem(?=\s+\p{Lu})/gu,
-        function (m, a, b) { return (a || b) + 'inem'; })
-      .replace(/(?<![\p{L}])([Ee])r\/[Ss]ie(?![\p{L}])/gu, '$1r')
-      .replace(/(?<![\p{L}])([Ss])ie\/[Ee]r(?![\p{L}])/gu, function (m, s) { return s === 'S' ? 'Er' : 'er'; })
-      .replace(/(?<![\p{L}])([Ii])hm\/[Ii]hr(?![\p{L}])/gu, '$1hm')
-      .replace(/(?<![\p{L}])([Ii])hn\/[Ss]ie(?![\p{L}])/gu, '$1hn')
-      .replace(/(?<![\p{L}])([Ss]ein)(e[mnrs]?)?\/[Ii]hr(?:e[mnrs]?)?(?![\p{L}])/gu, '$1$2');
+    for (let i = 0; i < reArt.length; i++) t = t.replace(reArt[i][0], reArt[i][1]);
+    return t;
+  }
+
+  // ---------------------------------------------------------------------
+  // Abkürzungen wie (m/w/d) in Stellenanzeigen
+  // ---------------------------------------------------------------------
+
+  const SL = P`\s*[\/|\\]\s*\*?`;
+  // Erlaubte Angaben: zwei (m/w, w/m, m/f, f/m), drei oder vier Teile aus m, w, f, d, x, i, divers.
+  // Zwei Teile wie m/d oder w/d bleiben stehen (Einheiten wie m/d = Meter pro Tag).
+  const ABB_TWO = P`(?:[mw]${SL}[wm]|m${SL}f|f${SL}m)`;
+  const ABB_MULTI = P`(?:(?:[mwf]|d)${SL}(?:[mwfdxi]|divers|diverse)(?:${SL}(?:[mwfdxi]|divers|diverse)){1,2})`;
+  const ABB_WORDS = P`(?:gn|all genders|alle geschlechter|alle gender)`;
+  const reAbbrBr = new RegExp(
+    P`[ \t]*[(\[]\s*(?:${ABB_TWO}\*?|${ABB_MULTI}\*?|${ABB_WORDS})\s*[)\]]`, 'giu');
+  // Ohne Klammern nur Dreiergruppen direkt hinter einem Wort: "Entwickler m/w/d"
+  const reAbbrBare = new RegExp(
+    P`(?<=[\p{L})])[ \t]+${ABB_MULTI}\*?(?![\p{L}\d\/])`, 'giu');
+
+  function abbreviations(t, opts) {
+    t = t.replace(reAbbrBr, function (m) { return ignored(m, opts) ? m : ''; });
+    t = t.replace(reAbbrBare, function (m) { return ignored(m, opts) ? m : ''; });
+    return t;
   }
 
   // Wie String.replace, aber ein abgelehnter Treffer (Rückgabe null) verbraucht
@@ -290,6 +321,24 @@
     return null;
   }
 
+  // Dativ Plural: nur bei klarem Auslöser (den, allen, mit, von ...), ein Adjektiv dazwischen ist erlaubt.
+  function pluralDative(before) {
+    const cut = before.split(reClauseCut).pop();
+    const words = cut.trim().split(/\s+/).filter(Boolean).slice(-2).reverse();
+    if (!words.length) return false;
+    const w0 = words[0].toLowerCase();
+    if (DAT_DET.has(w0) || DAT_PREP.has(w0)) return true;
+    if (words.length > 1 && /^\p{Ll}{3,}en$/u.test(words[0])) {
+      const w1 = words[1].toLowerCase();
+      return DAT_DET.has(w1) || DAT_PREP.has(w1);
+    }
+    return false;
+  }
+
+  function dativePlural(word) {
+    return /[ns]$/i.test(word) ? word : word + 'n';
+  }
+
   function inflect(word, cs) {
     if (!cs) return word;
     const l = word.toLowerCase();
@@ -306,14 +355,19 @@
 
   function gap(t, opts) {
     t = t.replace(reCompoundSep, '').replace(reCompoundBI, '');
-    t = t.replace(reParen, function (m, stem) {
+    t = t.replace(reParen, function (m, stem, offset, str) {
       if (ignored(m, opts) || IGNORE_STEMS.has(stem) || stem.length < 3) return m;
-      return pluralMasc(stem);
+      const w = pluralMasc(stem);
+      return pluralDative(str.slice(0, offset)) ? dativePlural(w) : w;
     });
     t = t.replace(reGap, function (m, art, sp, stem, g1, g2, offset, str) {
       if (ignored(m, opts) || IGNORE_STEMS.has(stem) || stem.length < 3) return m;
       const plural = (g1 || g2).toLowerCase() === 'innen';
-      if (plural) return (art ? art + sp : '') + pluralMasc(stem);
+      if (plural) {
+        let w = pluralMasc(stem);
+        if (!art && pluralDative(str.slice(0, offset))) w = dativePlural(w);
+        return (art ? art + sp : '') + w;
+      }
       const before = str.slice(0, offset);
       let word = singularMasc(stem);
       let cs = null;
@@ -454,6 +508,7 @@
     const r = opts.rules;
     if (r.determiners) t = determiners(t);
     if (r.articles) t = articles(t);
+    if (r.abbreviations) t = abbreviations(t, opts);
     if (r.doubles) t = doubles(t, opts);
     if (r.gap) t = gap(t, opts);
     if (r.participles) t = participles(t, opts);

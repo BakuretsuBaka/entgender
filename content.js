@@ -14,7 +14,9 @@
 
   const SKIP = 'script,style,noscript,textarea,input,code,pre,template,kbd,samp,' +
     '[contenteditable]:not([contenteditable="false"])';
-  const ATTRS = ['alt', 'title', 'placeholder', 'aria-label'];
+  const ATTRS = ['alt', 'title', 'placeholder', 'aria-label', 'content'];
+  // <meta content> nur bei Beschreibung und Vorschautiteln, nicht bei viewport, robots usw.
+  const META_NAMES = /^(?:description|og:(?:title|description|site_name|image:alt)|twitter:(?:title|description|image:alt)|title)$/i;
   const OBS = {
     childList: true,
     subtree: true,
@@ -59,6 +61,8 @@
   function processAttrs(el) {
     for (let i = 0; i < ATTRS.length; i++) {
       const a = ATTRS[i];
+      if (a === 'content' && !(el.localName === 'meta' &&
+          META_NAMES.test(el.getAttribute('name') || el.getAttribute('property') || ''))) continue;
       const v = el.getAttribute(a);
       if (!v || v.length < 4) continue;
       const m0 = attrOrig.get(el);

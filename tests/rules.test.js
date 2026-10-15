@@ -100,6 +100,47 @@ const CASES = [
   ['Kolleg*in', 'Kollege'],
   ['Patient*in', 'Patient'],
   ['Der Nachbar*in', 'Der Nachbar'],
+  // Weitere Gender-Zeichen
+  ['Student•innen', 'Studenten'],
+  ['Student⋅innen', 'Studenten'],
+  ['Student∙innen', 'Studenten'],
+  ['Student‧innen', 'Studenten'],
+  ['Student⋆innen', 'Studenten'],
+  ['Student＊innen', 'Studenten'],
+  ['Student：innen', 'Studenten'],
+  ['Lehrer⋆in', 'Lehrer'],
+  ['jede⋆r', 'jeder'],
+  // Artikelpaare mit Stern oder Doppelpunkt
+  ['der*die Nutzer*in', 'der Nutzer'],
+  ['der:die Lehrer', 'der Lehrer'],
+  ['die*der Lehrer', 'der Lehrer'],
+  ['sie*er', 'er'],
+  ['Er:Sie', 'Er'],
+  ['seine*ihre Aufgaben', 'seine Aufgaben'],
+  ['dem*der Lehrer', 'dem Lehrer'],
+  ['ihm*ihr', 'ihm'],
+  // Dativ Plural bei Genderformen
+  ['mit Lehrer:innen', 'mit Lehrern'],
+  ['von Ärzt*innen', 'von Ärzten'],
+  ['mit den Lehrer*innen', 'mit den Lehrern'],
+  ['mit den neuen Lehrer*innen', 'mit den neuen Lehrern'],
+  ['bei Student(inn)en', 'bei Studenten'],
+  ['mit allen Kolleg*innen', 'mit allen Kollegen'],
+  ['von Nachbar*innen', 'von Nachbarn'],
+  ['mit Chef*innen', 'mit Chefs'],
+  ['Die Lehrer*innen', 'Die Lehrer'],
+  ['Wir danken den Besucher:innen', 'Wir danken den Besuchern'],
+  // Abkürzungen
+  ['Entwickler (m/w/d) gesucht', 'Entwickler gesucht'],
+  ['Entwickler m/w/d gesucht', 'Entwickler gesucht'],
+  ['Pflegekraft (w/m/d)', 'Pflegekraft'],
+  ['Koch [m/w/d*]', 'Koch'],
+  ['Koch (m/w/d/x)', 'Koch'],
+  ['Koch (m / w / d)', 'Koch'],
+  ['Wir suchen (all genders) Leute', 'Wir suchen Leute'],
+  ['Lehrer (gn)', 'Lehrer'],
+  ['Ingenieur (m/w/divers)', 'Ingenieur'],
+  ['Stellenangebot Pfleger:in (m/w/d)', 'Stellenangebot Pfleger'],
   // Doppelformen
   ['Patientinnen und Patienten', 'Patienten'],
   ['Die Patientinnen und Patienten warten.', 'Die Patienten warten.'],
@@ -181,6 +222,12 @@ const UNCHANGED = [
   'die Anwesenden',
   'die Zugehörenden',
   'und/oder',
+  'Rate (m/d)',
+  'Wert (w/d)',
+  'Geschwindigkeit in m/s',
+  '2 m/w/d Wert',
+  'Tag m/d',
+  'mit Lehrern',
   'Studenten',
   'Der Arzt und die Pflegerin',
   ''
@@ -216,6 +263,11 @@ test('eigene Ersetzungen laufen vor den Regeln', () => {
 test('Ausnahmen werden nicht angefasst', () => {
   const o = E.buildOptions({ ignoreWords: 'Student*innen' });
   assert.equal(run('Student*innen und Lehrer*innen', o), 'Student*innen und Lehrer');
+});
+
+test('Abkürzungen-Regel lässt sich abschalten', () => {
+  const o = E.buildOptions({ rules: { abbreviations: false } });
+  assert.equal(run('Entwickler (m/w/d)', o), 'Entwickler (m/w/d)');
 });
 
 test('Partizipien-Regel lässt sich abschalten', () => {

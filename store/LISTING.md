@@ -17,6 +17,7 @@ Was ersetzt wird:
 • Doppelformen: Patientinnen und Patienten, die Ärztin oder der Arzt
 • Artikel und Pronomen: jede*r, ein*e, der/die, er/sie, seine/ihre
 • Substantivierte Partizipien: Studierende, Zuschauende, Teilnehmende werden zu Studenten, Zuschauer, Teilnehmer (nur als Personenbezeichnung, nicht bei Adjektiven)
+• Abkürzungen in Stellenanzeigen: (m/w/d), (all genders), (gn) werden entfernt
 • Zusammensetzungen: SchülerInnenvertretung wird zu Schülervertretung
 
 Bedienung:
