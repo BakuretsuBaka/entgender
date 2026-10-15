@@ -852,10 +852,19 @@
   // Nicht mitten in Wörtern und nicht in Bindestrich-Zusammensetzungen (Content-Marketing)
   const ANG_PRE = P`(?<![\p{L}\-‐‑])`;
   const ANG_POST = P`(?![\p{L}]|[\-‐‑]\p{L})`;
-  const ANG_DET = P`(?:[Dd](?:ie|er|as|es|em|en)|(?:[Ee]in|[Kk]ein|[Mm]ein|[Dd]ein|[Ss]ein|[Ii]hr|[Uu]nser|[Dd]ies|[Jj]ed|[Ww]elch|[Mm]anch)(?:e|er|es|em|en)?)`;
+  const ANG_NOCAP = P`(?!\s+\p{Lu})`;
+  const ANG_DET = P`(?:[Dd](?:ie|er|as|es|em|en)|(?:[Ee]in|[Kk]ein|[Mm]ein|[Dd]ein|[Ss]ein|[Ii]hr|[Uu]nser|[Dd]ies|[Jj]ed|[Ww]elch|[Mm]anch)(?:e|er|es|em|en)?|[Ii]m|[Aa]m|[Zz]um|[Zz]ur|[Vv]om|[Bb]eim|[Ii]ns|[Aa]ns|[Aa]ufs)`;
   const ANG_STEMS = ['unser', 'kein', 'mein', 'dein', 'sein', 'ihr', 'ein', 'dies', 'jed', 'welch', 'manch'];
   const ANG_STRONG = new Set(['dies', 'jed', 'welch', 'manch']);
   const NOM_WORDS = new Set(['dass', 'weil', 'wenn', 'ob', 'als', 'dann', 'denn', 'doch', 'aber', 'sondern']);
+  // Zusammenziehungen: Präposition + bestimmter Artikel, und der Fall, den sie festlegen
+  const ANG_CONTR = { im: ['in', 'dem', 'dat'], am: ['an', 'dem', 'dat'], zum: ['zu', 'dem', 'dat'],
+    vom: ['von', 'dem', 'dat'], beim: ['bei', 'dem', 'dat'], ins: ['in', 'das', 'acc'],
+    ans: ['an', 'das', 'acc'], aufs: ['auf', 'das', 'acc'], zur: ['zu', 'der', 'dat'] };
+  const ANG_RECONTRACT = { 'in dem': 'im', 'an dem': 'am', 'zu dem': 'zum', 'von dem': 'vom',
+    'bei dem': 'beim', 'in das': 'ins', 'an das': 'ans', 'auf das': 'aufs', 'zu der': 'zur' };
+  // Wörter auf -er/-es/-em, die keine Adjektive sind
+  const ANG_STOP = new Set(['unter', 'außer', 'immer', 'wieder', 'hinter', 'weiter', 'sonder', 'nieder', 'lieber']);
 
   function detParts(w) {
     const l = w.toLowerCase();
@@ -870,58 +879,125 @@
     return null;
   }
 
-  // Wofür steht der Artikel vor einem Nomen des Geschlechts `from`?
-  // 'na' Nominativ/Akkusativ, 'g' Genitiv, 'd' Dativ, 'keep' (passt nicht zu `from`), 'skip' (nicht eindeutig)
-  function detRole(from, p, prepCase, hasS) {
-    if (from === 'f') {
-      if (p.def ? p.l === 'die' : p.rest === 'e') return 'na';
-      if (p.def ? p.l === 'der' : p.rest === 'er') return prepCase || 'skip';
-      return 'keep';
-    }
-    if (p.def) return p.l === 'das' ? 'na' : p.l === 'des' ? 'g' : p.l === 'dem' ? 'd' : 'keep';
-    if (p.strong) return p.rest === 'es' ? (hasS ? 'g' : 'na') : p.rest === 'em' ? 'd' : 'keep';
-    return p.rest === '' ? 'na' : p.rest === 'es' ? 'g' : p.rest === 'em' ? 'd' : 'keep';
+  const DEF_FORMS = {
+    m: { nom: 'der', acc: 'den', gen: 'des', dat: 'dem' },
+    n: { nom: 'das', acc: 'das', gen: 'des', dat: 'dem' },
+    f: { nom: 'die', acc: 'die', gen: 'der', dat: 'der' }
+  };
+  function stemEnds(strong) {
+    return {
+      m: { nom: strong ? 'er' : '', acc: 'en', gen: 'es', dat: 'em' },
+      n: { nom: strong ? 'es' : '', acc: strong ? 'es' : '', gen: 'es', dat: 'em' },
+      f: { nom: 'e', acc: 'e', gen: 'er', dat: 'er' }
+    };
+  }
+  const CASES = ['nom', 'acc', 'gen', 'dat'];
+
+  function detForm(p, g, c) {
+    return p.def ? DEF_FORMS[g][c] : p.stem + stemEnds(p.strong)[g][c];
   }
 
-  function buildDet(to, role, p) {
-    if (p.def) {
-      if (to === 'n') return { na: 'das', g: 'des', d: 'dem' }[role];
-      if (to === 'f') return role === 'na' ? 'die' : 'der';
-      return role === 'nom' ? 'der' : 'den';
-    }
-    if (to === 'n') return p.stem + { na: p.strong ? 'es' : '', g: 'es', d: 'em' }[role];
-    if (to === 'f') return p.stem + (role === 'na' ? 'e' : 'er');
-    return p.stem + (role === 'nom' ? (p.strong ? 'er' : '') : 'en');
+  // In welchen Fällen kann dieser Artikel vor einem Nomen des Geschlechts g stehen?
+  function detCases(p, g) {
+    const cur = p.def ? p.l : p.stem + p.rest;
+    return CASES.filter(function (c) { return detForm(p, g, c) === cur; });
   }
 
   function genS(w) { return /(?:[sßxz]|sch)$/.test(w) ? 'es' : 's'; }
 
-  const ANG_NOCAP = P`(?!\s+\p{Lu})`;
-  // src: Quelle, sfx: erlaubt ein angehängtes s (Mehrzahl oder Genitiv), sg/pl: Ersatz,
-  // weak: schwache Deklination, from/to: Geschlecht von Original und Ersatz (nur wenn es wechselt)
-  const ANG_SPECS = [
-    { src: P`Content[ \-‐‑]?Creator`, sfx: true, sg: 'Inhalteproduzent', weak: true, after: ANG_NOCAP },
-    { src: P`Creator`, sfx: true, sg: 'Gestalter', pl: 'Gestalter', after: ANG_NOCAP },
-    { src: P`Content`, sfx: true, sg: 'Inhalt', pl: 'Inhalte', after: ANG_NOCAP },
-    { src: P`[Ss]afe\s?[Ss]pace`, sfx: true, sg: 'Schutzraum', pl: 'Schutzräume' },
-    { src: P`[Hh]omepage`, sfx: true, sg: 'Startseite', pl: 'Startseiten', to: 'f' },
-    { src: P`[Ww]ish\s?[Ll]ist`, sfx: true, sg: 'Wunschliste', pl: 'Wunschlisten', to: 'f' },
-    { src: P`Diversity`, sg: 'Vielfalt', to: 'f' },
-    { src: P`Empowerment`, sfx: true, sg: 'Ermächtigung', from: 'n', to: 'f' },
-    { src: P`Awareness`, sg: 'Bewusstsein', from: 'f', to: 'n' },
-    { src: P`[Rr]agebait`, sfx: true, sg: 'Wutköder', pl: 'Wutköder', from: 'n', to: 'm' }
-  ].map(function (sp) {
+  // src: Quelle (Regex), sg/pl: Ersatz in Einzahl und Mehrzahl (pl null: Mehrzahl nicht ersetzen),
+  // from/to: Geschlecht des Originals (mehrere möglich) und des Ersatzes, sfx: erlaubte Endung,
+  // weak: schwache Deklination, plural: Ersatz steht schon in der Mehrzahl, sameForm: Einzahl und
+  // Mehrzahl des Originals sind gleich, nocap: nicht vor einem großgeschriebenen Wort
+  const ANG_RAW = [
+    ['Content[ \\-‐‑]?Creator', 'Inhalteproduzent', { from: 'm', to: 'm', weak: true, pl: 'Inhalteproduzenten', nocap: true }],
+    ['(?:Trigger|Content)[ \\-‐‑]?(?:[Ww]arnung|Warning)', 'Inhaltswarnung', { from: 'f', to: 'f', pl: 'Inhaltswarnungen', sfx: '(?:s|en)?' }],
+    ['Creator', 'Gestalter', { from: 'm', to: 'm', pl: 'Gestalter', nocap: true }],
+    ['Content', 'Inhalt', { from: 'm', to: 'm', pl: 'Inhalte', nocap: true }],
+    ['[Ss]afe\\s?[Ss]pace', 'Schutzraum', { from: 'm', to: 'm', pl: 'Schutzräume' }],
+    ['Brave\\s?[Ss]pace', 'Mutraum', { from: 'm', to: 'm', pl: 'Muträume' }],
+    ['[Hh]omepage', 'Startseite', { from: 'f', to: 'f', pl: 'Startseiten' }],
+    ['[Ww]ish\\s?[Ll]ist', 'Wunschliste', { from: 'f', to: 'f', pl: 'Wunschlisten' }],
+    ['Diversity', 'Vielfalt', { from: 'f', to: 'f', sfx: '' }],
+    ['Empowerment', 'Ermächtigung', { from: 'n', to: 'f', pl: 'Ermächtigungen' }],
+    ['Awareness', 'Bewusstsein', { from: 'f', to: 'n', sfx: '' }],
+    ['[Rr]agebait', 'Wutköder', { from: 'mn', to: 'm', pl: 'Wutköder' }],
+    ['Feedback', 'Rückmeldung', { from: 'n', to: 'f', pl: 'Rückmeldungen' }],
+    ['Update', 'Aktualisierung', { from: 'n', to: 'f', pl: 'Aktualisierungen' }],
+    ['Download', 'Herunterladen', { from: 'mn', to: 'n', pl: null }],
+    ['Upload', 'Hochladen', { from: 'mn', to: 'n', pl: null }],
+    ['Deadline', 'Frist', { from: 'f', to: 'f', pl: 'Fristen' }],
+    ['Meeting', 'Besprechung', { from: 'n', to: 'f', pl: 'Besprechungen' }],
+    ['Video[ \\-‐‑]?[Cc]all', 'Videoanruf', { from: 'm', to: 'm', pl: 'Videoanrufe' }],
+    ['Conference[ \\-‐‑]?[Cc]all', 'Telefonkonferenz', { from: 'm', to: 'f', pl: 'Telefonkonferenzen' }],
+    ['Kick[ \\-‐‑]?[Oo]ff', 'Auftakt', { from: 'mn', to: 'm', pl: 'Auftakte' }],
+    ['Workshop', 'Arbeitstreffen', { from: 'm', to: 'n', pl: 'Arbeitstreffen' }],
+    ['Newsletter', 'Rundbrief', { from: 'm', to: 'm', pl: 'Rundbriefe', sameForm: 'sg', sfx: '(?:s|n)?' }],
+    ['Log[\\-‐‑]?in', 'Anmeldung', { from: 'mn', to: 'f', pl: 'Anmeldungen', nocap: true }],
+    ['Reset', 'Zurücksetzen', { from: 'mn', to: 'n', pl: null }],
+    ['Account', 'Konto', { from: 'mn', to: 'n', pl: 'Konten', nocap: true }],
+    ['Support', 'Kundendienst', { from: 'm', to: 'm', sfx: '', nocap: true }],
+    ['Hotline', 'Telefondienst', { from: 'f', to: 'm', pl: 'Telefondienste' }],
+    ['Newsfeed', 'Nachrichtenstrom', { from: 'm', to: 'm', pl: 'Nachrichtenströme' }],
+    ['Timeline', 'Zeitleiste', { from: 'f', to: 'f', pl: 'Zeitleisten' }],
+    ['Follower', 'Abonnent', { from: 'm', to: 'm', weak: true, sameForm: true, pl: 'Abonnenten', sfx: '(?:s|n)?' }],
+    ['Influencer', 'Meinungsmacher', { from: 'm', to: 'm', pl: 'Meinungsmacher', sameForm: 'sg', sfx: '(?:s|n)?' }],
+    ['Shitstorm', 'Empörungswelle', { from: 'm', to: 'f', pl: 'Empörungswellen' }],
+    ['Fake[ \\-‐‑]?News', 'Falschmeldungen', { plural: true, sfx: '' }],
+    ['Hate[ \\-‐‑]?Speech', 'Hassrede', { from: 'f', to: 'f', sfx: '' }],
+    ['Cyberbullying', 'Cybermobbing', { from: 'n', to: 'n', sfx: '' }],
+    ['Mindset', 'Einstellung', { from: 'n', to: 'f', pl: 'Einstellungen' }],
+    ['Screenshot', 'Bildschirmfoto', { from: 'm', to: 'n', pl: 'Bildschirmfotos' }],
+    ['E[\\-‐‑]?[Mm]ail', 'E-Post', { from: 'f', to: 'f', pl: null }],
+    ['Cloud', 'Datenwolke', { from: 'f', to: 'f', pl: 'Datenwolken', nocap: true }],
+    ['Selfie', 'Eigenfoto', { from: 'n', to: 'n', pl: 'Eigenfotos' }],
+    ['Hashtag', 'Schlagwort', { from: 'm', to: 'n', pl: 'Schlagworte' }],
+    ['Live[ \\-‐‑]?[Ss]tream', 'Direktübertragung', { from: 'm', to: 'f', pl: 'Direktübertragungen', nocap: true }],
+    ['Stream', 'Übertragung', { from: 'm', to: 'f', pl: 'Übertragungen', nocap: true }],
+    ['Gamer', 'Spieler', { from: 'm', to: 'm', pl: 'Spieler', sameForm: 'sg', sfx: '(?:s|n)?' }],
+    ['Home[ \\-‐‑]?[Oo]ffice', 'Heimarbeit', { from: 'n', to: 'f', pl: null }],
+    ['Remote[ \\-‐‑]?[Ww]ork', 'Fernarbeit', { from: 'n', to: 'f', sfx: '' }],
+    ['Recruiting', 'Personalgewinnung', { from: 'n', to: 'f', sfx: '' }],
+    ['Onboarding', 'Einarbeitung', { from: 'n', to: 'f', sfx: '' }],
+    ['Team[ \\-‐‑]?[Ll]ead', 'Teamleiter', { from: 'm', to: 'm', pl: 'Teamleiter' }],
+    ['Performance', 'Leistung', { from: 'f', to: 'f', pl: 'Leistungen', nocap: true }],
+    ['Skill', 'Fähigkeit', { from: 'm', to: 'f', pl: 'Fähigkeiten' }],
+    ['Know[ \\-‐‑]?[Hh]ow', 'Wissen-wie', { from: 'n', to: 'n', sfx: '' }],
+    ['Brainstorming', 'Ideensammlung', { from: 'n', to: 'f', pl: 'Ideensammlungen' }],
+    ['Benchmark', 'Vergleichswert', { from: 'm', to: 'm', pl: 'Vergleichswerte' }],
+    ['Roadmap', 'Fahrplan', { from: 'f', to: 'm', pl: 'Fahrpläne' }],
+    ['Sale', 'Ausverkauf', { from: 'mn', to: 'm', sfx: '', nocap: true }],
+    ['Voucher', 'Gutschein', { from: 'm', to: 'm', pl: 'Gutscheine', nocap: true }],
+    ['Coupon', 'Gutschein', { from: 'm', to: 'm', pl: 'Gutscheine', nocap: true }],
+    ['Check[ \\-‐‑]?out', 'Kasse', { from: 'mn', to: 'f', sfx: '', nocap: true }],
+    ['(?:Shopping[ \\-‐‑]?)?Cart', 'Warenkorb', { from: 'm', to: 'm', pl: 'Warenkörbe', nocap: true }],
+    ['Delivery', 'Lieferung', { from: 'f', to: 'f', sfx: '', nocap: true }],
+    ['Refund', 'Rückerstattung', { from: 'm', to: 'f', pl: 'Rückerstattungen' }]
+  ];
+
+  const ANG_SPECS = ANG_RAW.map(function (r) {
+    const sp = Object.assign({ src: r[0], sg: r[1], sfx: 's?' }, r[2]);
     sp.re = new RegExp(
-      P`${ANG_PRE}(?:(${ANG_DET})\s+)?(${sp.src})(${sp.sfx ? 's?' : ''})${sp.after || ''}${ANG_POST}`, 'gu');
+      P`${ANG_PRE}(?:(${ANG_DET})\s+)?(${sp.src})(${sp.sfx})${sp.nocap ? ANG_NOCAP : ''}${ANG_POST}`, 'gu');
     return sp;
   });
 
+  const ANG_VERBS_RAW = [
+    ['[Uu]pdaten', 'aktualisieren'], ['[Uu]ploaden', 'hochladen'], ['[Dd]ownloaden', 'herunterladen'],
+    ['[Ee]inloggen', 'anmelden'], ['[Aa]usloggen', 'abmelden'], ['[Nn]etworken', 'vernetzen'],
+    ['[Rr]agebaiten', 'wutködern']
+  ];
+  const ANG_VERBS = ANG_VERBS_RAW.map(function (v) { return [new RegExp(P`${ANG_PRE}${v[0]}${ANG_POST}`, 'gu'), v[1]]; });
+
   const reShort = new RegExp(
     P`${ANG_PRE}(YouTube|Instagram|TikTok|Facebook|Snapchat|Pinterest)([ \-‐‑])Short(s?)${ANG_POST}`, 'gu');
-  const reRagebaiten = new RegExp(P`${ANG_PRE}([Rr])agebaiten${ANG_POST}`, 'gu');
 
+  // Vorfilter: ein einziger Durchlauf, bevor die einzelnen Regeln laufen
   const QUICK_ANG = new RegExp(
-    P`Diversity|Empowerment|[Rr]agebait|Awareness|[Ss]afe\s?[Ss]pace|[Hh]omepage|Content|Creator|Short|[Ww]ish\s?[Ll]ist`, 'u');
+    P`${ANG_PRE}(?:` + ANG_RAW.map(function (r) { return r[0]; }).join('|') + '|Short|' +
+    ANG_VERBS_RAW.map(function (v) { return v[0]; }).join('|') + ')', 'u');
+
+  const CASE_NAMES = { D: 'dat', A: 'acc', G: 'gen' };
 
   function angReplace(t, sp, opts) {
     return scan(sp.re, t, function (m, det, word, sfx, offset, str) {
@@ -929,57 +1005,86 @@
       const wordStart = offset + m.length - word.length - sfx.length;
       const beforeWord = str.slice(0, wordStart);
       const beforeDet = str.slice(0, offset);
-      const change = sp.from && sp.from !== sp.to;
-      let role = 'keep';
-      let newDet = null;
+      const to = sp.to || '';
+      const from = sp.from || to;
+      const changes = from.split('').some(function (g) { return g !== to; });
+      let cases = null;   // mögliche Fälle laut Artikel (null: kein passender Artikel)
+      let newDetText = null;
+      let prefix = m.slice(0, m.length - word.length - sfx.length);
 
-      if (change) {
-        if (!det) {
-          // Artikel plus Adjektiv davor ("die neue Awareness"): Endung des Adjektivs passt nicht mehr
-          const w = beforeWord.split(reClauseCut).pop().trim().split(/\s+/).filter(Boolean);
-          if (w.length >= 2 && /^\p{Ll}{2,}(?:e|en|er|es|em)$/u.test(w[w.length - 1]) &&
-              detParts(w[w.length - 2])) return m;
-        } else {
-          const p = detParts(det);
-          if (p) {
+      if (det && to) {
+        const pr = ANG_CONTR[det.toLowerCase()];
+        const p = pr ? { def: true, l: pr[1] } : detParts(det);
+        if (p) {
+          let found = null;
+          for (let i = 0; i < from.length && !found; i++) {
+            let cs = detCases(p, from[i]);
+            if (pr) cs = cs.filter(function (c) { return c === pr[2]; });
+            if (cs.length) found = cs;
+          }
+          if (found) {
             const lw = lastWord(beforeDet);
-            const prepCase = DAT_PREP.has(lw) ? 'd' : GEN_PREP.has(lw) ? 'g' : null;
-            role = detRole(sp.from, p, prepCase, sfx === 's');
-            if (role === 'skip') return m;
-            if (role !== 'keep') {
-              if (sp.to === 'm') {
-                // Neutrum nach Maskulinum: Nominativ oder Akkusativ muss erkennbar sein
-                if (role === 'na') {
-                  const cut = beforeDet.split(reClauseCut);
-                  const clauseStart = cut[cut.length - 1].trim() === '';
-                  if (clauseStart || NOM_WORDS.has(lw)) newDet = buildDet('m', 'nom', p);
-                  else if (ACC_PREP.has(lw)) newDet = buildDet('m', 'acc', p);
-                  else return m;
-                }
-              } else {
-                newDet = buildDet(sp.to, role, p);
-              }
+            const ctx = DAT_PREP.has(lw) ? ['dat'] : GEN_PREP.has(lw) ? ['gen'] : ACC_PREP.has(lw) ? ['acc']
+              : (beforeDet.split(reClauseCut).pop().trim() === '' || NOM_WORDS.has(lw)) ? ['nom'] : null;
+            const narrow = function (cs) {
+              if (!ctx) return cs;
+              const x = cs.filter(function (c) { return ctx.indexOf(c) >= 0; });
+              return x.length ? x : cs;
+            };
+            const formsOf = function (cs) {
+              const set = new Set();
+              cs.forEach(function (c) { set.add(detForm(p, to, c)); });
+              return set;
+            };
+            cases = found;
+            if (formsOf(cases).size > 1) cases = narrow(cases);
+            if (formsOf(cases).size > 1) return m;       // nicht eindeutig: lieber stehen lassen
+            if (cases.length > 1) cases = narrow(cases);
+            const nf = detForm(p, to, cases[0]);
+            const base = p.def ? p.l : p.stem + p.rest;
+            if (nf !== base) {
+              const joined = pr ? (ANG_RECONTRACT[pr[0] + ' ' + nf] || pr[0] + ' ' + nf) : nf;
+              newDetText = matchCase(det, joined);
             }
           }
         }
+      } else if (!det && changes) {
+        // Adjektiv davor ("die neue Awareness", "konstruktives Feedback"): die Endung passt nicht mehr
+        const w = beforeWord.split(reClauseCut).pop().trim().split(/\s+/).filter(Boolean);
+        const prev = w.length ? w[w.length - 1] : '';
+        if (prev && /^\p{Ll}{3,}(?:es|er|em)$/u.test(prev) && !ANG_STOP.has(prev)) return m;
+        if (w.length >= 2 && /^\p{Ll}{2,}(?:e|en)$/u.test(prev) && detParts(w[w.length - 2])) return m;
       }
 
-      const cs = role === 'g' ? 'G' : singCase(beforeWord);
+      const srcMN = /[mn]/.test(from);
+      let c;
+      if (cases) {
+        c = cases.length === 1 ? cases[0]
+          : (sfx === 's' && cases.indexOf('gen') >= 0 && srcMN ? 'gen' : (cases.indexOf('nom') >= 0 ? 'nom' : cases[0]));
+      } else {
+        c = CASE_NAMES[singCase(beforeWord)] || 'nom';
+      }
+
+      let plural;
+      if (sp.plural) plural = true;
+      else if (sfx) plural = !(sfx === 's' && c === 'gen' && srcMN);
+      else if (sp.sameForm) plural = !cases && (det ? true : sp.sameForm !== 'sg');
+      else plural = false;
+
       let noun;
-      if (sp.weak) {
-        noun = sp.sg + (sfx || cs ? 'en' : '');
-      } else if (sp.to === 'f') {
-        noun = sfx && sp.pl ? (pluralDative(beforeWord) ? dativePlural(sp.pl) : sp.pl) : sp.sg;
-      } else if (cs === 'G') {
+      if (plural) {
+        if (sp.pl === null) return m;
+        const pl = sp.pl || sp.sg;
+        noun = sp.plural ? pl : (pluralDative(beforeWord) ? dativePlural(pl) : pl);
+      } else if (sp.weak) {
+        noun = sp.sg + (c !== 'nom' ? 'en' : '');
+      } else if (c === 'gen' && /[mn]/.test(to)) {
         noun = sp.sg + genS(sp.sg);
-      } else if (sfx) {
-        noun = pluralDative(beforeWord) ? dativePlural(sp.pl) : sp.pl;
       } else {
         noun = sp.sg;
       }
 
-      let prefix = m.slice(0, m.length - word.length - sfx.length);
-      if (newDet) prefix = matchCase(det, newDet) + prefix.slice(det.length);
+      if (newDetText) prefix = newDetText + prefix.slice(det.length);
       return prefix + noun;
     });
   }
@@ -989,9 +1094,13 @@
     t = scan(reShort, t, function (m, site, sep, s) {
       return ignored(m, opts) ? null : site + sep + (s ? 'Kurzvideos' : 'Kurzvideo');
     });
-    return scan(reRagebaiten, t, function (m, r) {
-      return ignored(m, opts) ? null : (r === 'R' ? 'Wutködern' : 'wutködern');
-    });
+    for (let i = 0; i < ANG_VERBS.length; i++) {
+      const to = ANG_VERBS[i][1];
+      t = scan(ANG_VERBS[i][0], t, function (m) {
+        return ignored(m, opts) ? null : matchCase(m, to);
+      });
+    }
+    return t;
   }
 
   // ---------------------------------------------------------------------
