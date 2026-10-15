@@ -79,3 +79,6 @@ body.popup h2 { font-size: 13px; margin: 12px 0 4px; }
 .types li { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; border-bottom: 1px solid var(--line); }
 .types li:last-child { border-bottom: 0; }
 [hidden] { display: none !important; }
+
+.extras { margin-top: 36px; padding-top: 20px; border-top: 2px solid var(--line); }
+.extras-box { background: var(--field); border: 1px solid var(--line); border-radius: 8px; padding: 4px 14px; margin: 8px 0; }

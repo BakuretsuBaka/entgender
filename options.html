@@ -10,7 +10,8 @@
   <h1>Entgender</h1>
   <p class="muted">Entfernt Gendersprache auf Webseiten. Änderungen werden sofort gespeichert und auf geöffneten Seiten angewendet.</p>
 
-  <h2>Regeln</h2>
+  <h2>Gendersprache entfernen</h2>
+  <p class="muted">Die Hauptfunktion. Diese Regeln sind standardmäßig an.</p>
   <label class="rule"><input type="checkbox" id="r-gap">
     <span>Genderzeichen und Binnen-I<small>Student*innen, Student:innen, Student_innen, Student/innen, Student(inn)en, StudentInnen, Lehrer*in</small></span></label>
   <label class="rule"><input type="checkbox" id="r-doubles">
@@ -23,6 +24,10 @@
     <span>Substantivierte Partizipien<small>Studierende, Zuschauende, Teilnehmende, Mitarbeitende werden zu Studenten, Zuschauer, Teilnehmer, Mitarbeiter (nur als Personenbezeichnung im Plural, nicht bei Adjektiven wie "die studierende Tochter" oder in der weiblichen Einzahl)</small></span></label>
   <label class="rule"><input type="checkbox" id="r-abbreviations">
     <span>Abkürzungen in Stellenanzeigen<small>(m/w/d), (w/m/d), m/w/d, (all genders), (gn) werden entfernt</small></span></label>
+
+  <h2 class="extras">Extras</h2>
+  <p class="muted">Zusätzliche Sprachänderungen, die mit Gendersprache nichts zu tun haben. Alle sind standardmäßig aus.</p>
+<div class="extras-box">
   <label class="rule"><input type="checkbox" id="r-indefinite">
     <span>"mensch" und "frau" als "man"<small>wenn mensch das will wird zu wenn man das will; nur kleingeschrieben, "Mensch" und "Frau" als Hauptwörter bleiben stehen</small></span></label>
   <label class="rule"><input type="checkbox" id="r-oldTerms">
@@ -31,6 +36,9 @@
     <span>Dazu Begriffe, die heute als abwertend gelten<small>N-Wort wird zu Neger, Z-Wort zu Zigeuner, Schokokuss zu Negerkuss, Paprikasauce zu Zigeunersauce, Sinti und Roma zu Zigeuner. Eigener Schalter, unabhängig von der Option darüber.</small></span></label>
   <label class="rule"><input type="checkbox" id="r-anglicisms">
     <span>Anglizismen ersetzen<small>Zum Beispiel Feedback wird zu Rückmeldung, Update zu Aktualisierung, Meeting zu Besprechung, Account zu Konto, Homepage zu Startseite, Content zu Inhalt, Diversity zu Vielfalt, Cloud zu Datenwolke, Hashtag zu Schlagwort, Checkout zu Kasse und weitere (Liste in der README). Artikel und Fall werden angepasst. Gilt immer nur auf Seiten mit deutscher Sprachangabe, auch wenn "Nur auf deutschen Seiten arbeiten" aus ist.</small></span></label>
+</div>
+
+  <h2>Allgemein</h2>
   <label class="rule"><input type="checkbox" id="onlyGerman">
     <span>Nur auf deutschen Seiten arbeiten<small>Seiten mit einer anderen Sprachangabe im lang-Attribut werden übersprungen</small></span></label>
 
