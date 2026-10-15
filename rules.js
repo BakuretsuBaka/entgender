@@ -424,7 +424,12 @@
   // Maler.innen, Maler’innen: Punkt oder Apostroph als Trenner, nur mit Großbuchstaben davor
   const reDotMark = /(?<![\p{L}])(\p{Lu}\p{Ll}{2,})[.’'](innen|in)(?![\p{L}])/gu;
 
+  // Leerzeichen um das Zeichen herum ("Physiotherapeut *in", "Physiotherapeut* in"): zusammenziehen
+  const reSpaceBefore = /(?<=\p{L}{4})[ \t\u00a0]+([*∗＊_\/])[ \t\u00a0]*(?=in(?:nen)?(?![\p{L}]))/gu;
+  const reSpaceAfter = /(?<=\p{L}{4}[*∗＊_\/])[ \t\u00a0]+(?=in(?:nen)?(?![\p{L}]))/gu;
+
   function gap(t, opts) {
+    t = t.replace(reSpaceBefore, '$1').replace(reSpaceAfter, '');
     t = t.replace(reDotMark, '$1*$2');
     t = t.replace(reCompoundSep, '').replace(reCompoundBI, '');
     t = t.replace(reParen, function (m, stem, offset, str) {

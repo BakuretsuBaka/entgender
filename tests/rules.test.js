@@ -659,3 +659,14 @@ test('Artikelpaar ohne Hauptwort danach und kursives Weißsein', () => {
 for (const [input, want] of [["Der Airbag löste aus", "Das Prallkissen löste aus"], ["Die Airline fliegt", "Die Luftfahrtgesellschaft fliegt"], ["Der Alien landet", "Der Außerirdische landet"], ["Ein Alien landet", "Ein Außerirdischer landet"], ["Mit den Aliens", "Mit den Außerirdischen"], ["Aliens sind da", "Außerirdische sind da"], ["des Aliens", "des Außerirdischen"], ["Er ist ausgepowert", "Er ist ausgelaugt"], ["ein cooler Typ", "ein lässiger Typ"], ["Das ist fair", "Das ist gerecht"], ["Eine faire Chance", "Eine gerechte Gelegenheit"], ["Die Fairness", "Die Gerechtigkeit"], ["Das Baby schläft", "Der Säugling schläft"], ["mit den Babys", "mit den Säuglingen"], ["Die Barkeeperin", "Die Barfrau"], ["Die Champions League", "Die Champions League"], ["dem Callboy", "dem Lustknaben"], ["Wir chillen", "Wir faulenzen"], ["nicht dissen", "nicht verhöhnen"], ["mit den Computern", "mit den Rechnern"], ["Das Webdesign", "Das Webdesign"], ["durch E-Learning", "durch elektronische Bildung"], ["Das E-Learning", "Die elektronische Bildung"], ["den Fans", "den Bewunderern"], ["High-Heels", "Stöckelschuhe"], ["im Internet", "im Netz"], ["Die Ladies", "Die Damen"], ["Die Limited Edition", "Die begrenzte Auflage"], ["Der Insider", "Der Eingeweihte"], ["Der Insiderhandel", "Das Vorwissengeschäft"], ["Die Partys", "Die Feiern"], ["Das Make-up", "Die Schminke"], ["Er ist Teenager", "Er ist Jugendlicher"], ["den Teenagern", "den Jugendlichen"], ["Content Marketing", "Content Marketing"], ["Das Marketing", "Die Vermarktung"], ["Die T-Shirts", "Die T-Hemden"], ["Das Anti-Aging", "Der Altershemmer"], ["Die Lyrics", "Die Liedtexte"], ["Der Whistleblower", "Der Aufdecker"]]) {
   test('Anglizismen (erweitert): ' + input, () => { assert.equal(run(input, onAng), want); });
 }
+
+test('Leerzeichen um das Genderzeichen', () => {
+  assert.equal(run('Physiotherapeut *in'), 'Physiotherapeut');
+  assert.equal(run('Wir suchen Physiotherapeut *innen'), 'Wir suchen Physiotherapeuten');
+  assert.equal(run('Physiotherapeut* in'), 'Physiotherapeut');
+  assert.equal(run('Physiotherapeut * in'), 'Physiotherapeut');
+  assert.equal(run('Physiotherapeut /in'), 'Physiotherapeut');
+  assert.equal(run('Beispiel: in der Tat'), 'Beispiel: in der Tat');
+  assert.equal(run('Er und/ in'), 'Er und/ in');
+  assert.equal(run('Das 2 * in der Mitte'), 'Das 2 * in der Mitte');
+});
