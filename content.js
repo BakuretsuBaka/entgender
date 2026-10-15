@@ -25,8 +25,16 @@
     attributeFilter: ATTRS
   };
 
-  const textOrig = new Map(); // Textknoten -> [original, geschrieben]
-  const attrOrig = new Map(); // Element -> Map(attribut -> [original, geschrieben])
+  // Datensatz je Textknoten/Attribut: o Original, out Ergebnis, on ob out geschrieben wurde
+  // (sonst nur erkannt, siehe Modus 'detect'), st Zähler je Regelgruppe
+  const textOrig = new Map(); // Textknoten -> Datensatz
+  const attrOrig = new Map(); // Element -> Map(attribut -> Datensatz)
+  const counted = new WeakSet(); // Knoten, die schon in die Gesamtzahl eingegangen sind
+  const rangesOf = new Map(); // Textknoten -> Ranges der Markierung
+  let delta = 0; // neue Ersetzungen seit der letzten Meldung (Gesamtzähler)
+  let mode = 'off'; // 'on' ersetzt, 'detect' erkennt nur (Erweiterung aus, aber Markieren an), 'off'
+  let hlOn = false;
+  const hl = { sheet: false, on: null, off: null, ok: null };
   const pending = new Set();
   const pendingAttrs = new Set();
   const styleOrig = new Map(); // <i>/<em> um "weiß" -> [ursprünglicher font-style, Priorität]
@@ -41,9 +49,96 @@
     return !!el && !!el.closest(SKIP);
   }
 
+  function germanDoc() {
+    const l = (document.documentElement && document.documentElement.lang) || '';
+    return /^de(?:-|_|$)/i.test(l);
+  }
+
+  function sum(st) {
+    let n = 0;
+    for (const k in st) n += st[k];
+    return n;
+  }
+
+  function addCount(key, n) {
+    if (mode !== 'on' || !n || counted.has(key)) return;
+    counted.add(key);
+    delta += n;
+  }
+
+  // --- Markieren (CSS Custom Highlight API, ändert das DOM nicht) ---
+  function hlSupported() {
+    if (hl.ok === null) {
+      try { hl.ok = typeof Highlight === 'function' && !!CSS && !!CSS.highlights; } catch (e) { hl.ok = false; }
+    }
+    return hl.ok;
+  }
+
+  function hlSheet() {
+    if (hl.sheet) return;
+    hl.sheet = true;
+    const css = '::highlight(entgender-on){background-color:rgba(47,160,90,.38)}' +
+      '::highlight(entgender-off){background-color:rgba(220,60,60,.38)}';
+    try {
+      const sh = new CSSStyleSheet();
+      sh.replaceSync(css);
+      document.adoptedStyleSheets = Array.prototype.concat.call(Array.from(document.adoptedStyleSheets), [sh]);
+    } catch (e) {
+      try {
+        const st = document.createElement('style');
+        st.textContent = css;
+        (document.head || document.documentElement).appendChild(st);
+      } catch (e2) { /* ohne Markierung weiterarbeiten */ }
+    }
+  }
+
+  function hlObject() {
+    const key = mode === 'on' ? 'on' : 'off';
+    if (!hl[key]) {
+      hl[key] = new Highlight();
+      CSS.highlights.set('entgender-' + key, hl[key]);
+    }
+    return hl[key];
+  }
+
+  function dropRanges(node) {
+    const rs = rangesOf.get(node);
+    if (!rs) return;
+    const h = hl[mode === 'on' ? 'on' : 'off'];
+    rs.forEach(function (r) { if (h) h.delete(r); });
+    rangesOf.delete(node);
+  }
+
+  function markRanges(node, rec) {
+    if (!hlOn || !hlSupported()) return;
+    try {
+      hlSheet();
+      const h = hlObject();
+      const hunks = E.diffRanges(rec.o, rec.out);
+      const rs = [];
+      hunks.forEach(function (x) {
+        const span = rec.on ? x.b : x.a;
+        const r = document.createRange();
+        r.setStart(node, span[0]);
+        r.setEnd(node, Math.min(span[1], node.nodeValue.length));
+        h.add(r);
+        rs.push(r);
+      });
+      rangesOf.set(node, rs);
+    } catch (e) { /* Markierung ist optional */ }
+  }
+
+  function clearHighlights() {
+    rangesOf.clear();
+    try {
+      if (hl.on) hl.on.clear();
+      if (hl.off) hl.off.clear();
+    } catch (e) { /* ignorieren */ }
+  }
+
   // Option "ältere Begriffe": kursiv gesetztes "weiß" (<i>, <em>) wieder normal setzen
   function processItalic(node) {
-    if (!opts.rules.oldTerms) return;
+    if (mode !== 'on' || !opts.rules.oldTerms) return;
     const el = node.parentElement;
     if (!el || (el.localName !== 'i' && el.localName !== 'em')) return;
     if (el.childNodes.length !== 1 || styleOrig.has(el)) return;
@@ -57,9 +152,12 @@
     if (out !== word && !textOrig.has(node)) {
       const orig = node.nodeValue;
       const next = orig.replace(word, out);
-      textOrig.set(node, [orig, next]);
+      const rec = { o: orig, out: next, on: true, st: { oldTerms: 1 } };
+      textOrig.set(node, rec);
       node.nodeValue = next;
+      markRanges(node, rec);
     }
+    addCount(el, 1);
   }
 
   function processText(node) {
@@ -71,15 +169,22 @@
     if (insideSkipped(node)) return;
     const t = node.nodeValue;
     const rec = textOrig.get(node);
-    if (rec && rec[1] === t) return;
+    if (rec && (rec.on ? rec.out : rec.o) === t) return;
     if (!t || t.length < 4) {
-      if (rec) textOrig.delete(node);
+      if (rec) { textOrig.delete(node); dropRanges(node); }
       return;
     }
-    const out = E.entgender(t, opts);
+    const st = {};
+    const out = E.entgender(t, opts, st);
+    if (rec) dropRanges(node);
     if (out !== t) {
-      textOrig.set(node, [t, out]);
-      node.nodeValue = out;
+      const next = { o: t, out: out, on: mode === 'on', st: st };
+      textOrig.set(node, next);
+      if (next.on) {
+        node.nodeValue = out;
+        addCount(node, sum(st));
+      }
+      markRanges(node, next);
     } else if (rec) {
       textOrig.delete(node);
     }
@@ -94,13 +199,20 @@
       if (!v || v.length < 4) continue;
       const m0 = attrOrig.get(el);
       const rec = m0 && m0.get(a);
-      if (rec && rec[1] === v) continue;
-      const out = E.entgender(v, opts);
+      if (rec && (rec.on ? rec.out : rec.o) === v) continue;
+      const st = {};
+      const out = E.entgender(v, opts, st);
       if (out !== v) {
         let m = m0;
         if (!m) { m = new Map(); attrOrig.set(el, m); }
-        m.set(a, [v, out]);
-        el.setAttribute(a, out);
+        const on = mode === 'on';
+        m.set(a, { o: v, out: out, on: on, st: st });
+        if (on) {
+          el.setAttribute(a, out);
+          addCount(el, sum(st));
+        }
+      } else if (rec) {
+        m0.delete(a);
       }
     }
   }
@@ -136,29 +248,41 @@
   }
 
   function prune() {
-    textOrig.forEach(function (_, n) { if (!n.isConnected) textOrig.delete(n); });
+    textOrig.forEach(function (_, n) { if (!n.isConnected) { textOrig.delete(n); rangesOf.delete(n); } });
     attrOrig.forEach(function (_, el) { if (!el.isConnected) attrOrig.delete(el); });
     styleOrig.forEach(function (_, el) { if (!el.isConnected) styleOrig.delete(el); });
   }
 
-  function currentCount() {
+  // Ersetzungen auf dieser Seite, gesamt und je Regelgruppe
+  function currentStats() {
     prune();
-    let n = textOrig.size;
-    attrOrig.forEach(function (m) { n += m.size; });
-    styleOrig.forEach(function (_, el) { if (!textOrig.has(el.firstChild)) n++; });
-    return n;
+    const by = {};
+    let n = 0;
+    const add = function (st) {
+      for (const k in st) { by[k] = (by[k] || 0) + st[k]; n += st[k]; }
+    };
+    textOrig.forEach(function (rec) { add(rec.st); });
+    attrOrig.forEach(function (m) { m.forEach(function (rec) { add(rec.st); }); });
+    if (mode === 'on') {
+      styleOrig.forEach(function (_, el) {
+        if (!textOrig.has(el.firstChild)) { by.oldTerms = (by.oldTerms || 0) + 1; n++; }
+      });
+    }
+    return { n: n, by: by };
   }
 
-  // Meldet die Anzahl der Änderungen an den Service-Worker (Badge am Symbol).
+  // Meldet Anzahl und Aufteilung an den Service-Worker (Badge, Popup, Gesamtzähler).
   let reportTimer = 0;
   function report(immediate, init) {
     clearTimeout(reportTimer);
     const send = function () {
       if (typeof chrome === 'undefined' || !chrome.runtime) return; // Userscript: kein Zähler
       try {
+        const cs = currentStats();
         chrome.runtime.sendMessage(
-          { type: 'entgender:count', count: currentCount(), init: !!init },
+          { type: 'entgender:count', count: cs.n, by: cs.by, mode: mode, init: !!init, add: delta },
           function () { void chrome.runtime.lastError; });
+        delta = 0;
       } catch (e) { /* Kontext ungültig */ }
     };
     if (immediate) send();
@@ -172,6 +296,7 @@
     const els = Array.from(pendingAttrs);
     pending.clear();
     pendingAttrs.clear();
+    if (syncLang() && opts.rules.anglicisms) processTree(document.documentElement);
     nodes.forEach(function (n) { if (n.isConnected) processTree(n); });
     els.forEach(function (el) { if (el.isConnected && !el.closest(SKIP)) processAttrs(el); });
     if (textOrig.size > 3000) prune();
@@ -198,12 +323,12 @@
 
   function restore() {
     textOrig.forEach(function (rec, n) {
-      if (n.nodeValue === rec[1]) n.nodeValue = rec[0];
+      if (rec.on && n.nodeValue === rec.out) n.nodeValue = rec.o;
     });
     textOrig.clear();
     attrOrig.forEach(function (m, el) {
       m.forEach(function (rec, a) {
-        if (el.getAttribute(a) === rec[1]) el.setAttribute(a, rec[0]);
+        if (rec.on && el.getAttribute(a) === rec.out) el.setAttribute(a, rec.o);
       });
     });
     attrOrig.clear();
@@ -212,6 +337,7 @@
       else el.style.removeProperty('font-style');
     });
     styleOrig.clear();
+    clearHighlights();
   }
 
   function start() {
@@ -219,6 +345,7 @@
     active = true;
     const run = function () {
       if (!active) return;
+      syncLang();
       observer.observe(document.documentElement, OBS);
       processTree(document.documentElement);
       report(false);
@@ -238,14 +365,26 @@
     active = false;
   }
 
+  // Anglizismen gelten nur auf Seiten mit deutscher Sprachangabe, unabhängig von "Nur auf deutschen Seiten"
+  function syncLang() {
+    const g = germanDoc();
+    if (opts && opts.german !== g) { opts.german = g; return true; }
+    return false;
+  }
+
   function apply(raw) {
     const s = E.mergeSettings(raw);
     opts = E.buildOptions(s);
+    opts.german = germanDoc();
     const lang = (document.documentElement && document.documentElement.lang) || '';
     const langOk = !s.onlyGerman || !lang || /^de(?:-|_|$)/i.test(lang);
-    const on = s.enabled && langOk && !E.siteDisabled(s.disabledSites, location.hostname);
+    const siteOff = E.siteDisabled(s.disabledSites, location.hostname);
+    const on = s.enabled && langOk && !siteOff;
+    hlOn = !!(s.extendedView && s.highlight);
     stop();
-    if (on) start();
+    // Ist die Erweiterung aus und das Markieren an, wird nur erkannt (rot), nicht ersetzt.
+    mode = on ? 'on' : (hlOn && langOk ? 'detect' : 'off');
+    if (mode !== 'off') start();
     report(true, firstApply);
     if (firstApply) report(false);
     firstApply = false;
@@ -266,7 +405,8 @@
     });
     chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
       if (msg && msg.type === 'entgender:info') {
-        sendResponse({ host: location.hostname, count: currentCount(), active: active });
+        const cs = currentStats();
+        sendResponse({ host: location.hostname, count: cs.n, by: cs.by, mode: mode, active: active, hl: hlSupported() });
       }
     });
   } catch (e) {

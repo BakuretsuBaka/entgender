@@ -433,3 +433,95 @@ test('Einstellungen werden mit Standardwerten aufgefüllt', () => {
   assert.equal(s.rules.gap, false);
   assert.equal(s.rules.doubles, true);
 });
+
+// --- Anglizismen (nur mit opts.german) ---
+const onAng = E.buildOptions(Object.assign({}, E.DEFAULT_SETTINGS, { rules: Object.assign({}, E.DEFAULT_SETTINGS.rules, { anglicisms: true }) }));
+onAng.german = true;
+const ANG = [
+  ['Diversity ist wichtig.', 'Vielfalt ist wichtig.'],
+  ['Die Diversity im Team', 'Die Vielfalt im Team'],
+  ['Das Empowerment der Frauen', 'Die Ermächtigung der Frauen'],
+  ['Mit dem Empowerment', 'Mit der Ermächtigung'],
+  ['Die Awareness wächst.', 'Das Bewusstsein wächst.'],
+  ['Wir brauchen mehr Awareness.', 'Wir brauchen mehr Bewusstsein.'],
+  ['mit der Awareness', 'mit dem Bewusstsein'],
+  ['wegen der Awareness', 'wegen des Bewusstseins'],
+  ['Eine neue Awareness', 'Eine neue Awareness'],
+  ['Das Ragebait nervt.', 'Der Wutköder nervt.'],
+  ['Ich hasse das Ragebait', 'Ich hasse das Ragebait'],
+  ['Viele Ragebaits', 'Viele Wutköder'],
+  ['Sie wollen ragebaiten', 'Sie wollen wutködern'],
+  ['Ragebaiten ist doof', 'Wutködern ist doof'],
+  ['ein Safe Space', 'ein Schutzraum'],
+  ['Mit Safe Spaces', 'Mit Schutzräumen'],
+  ['die Safe Spaces', 'die Schutzräume'],
+  ['des Safe Spaces', 'des Schutzraums'],
+  ['die Homepage', 'die Startseite'],
+  ['zwei Homepages', 'zwei Startseiten'],
+  ['der Content', 'der Inhalt'],
+  ['des Contents', 'des Inhalts'],
+  ['viele Contents', 'viele Inhalte'],
+  ['Content Marketing', 'Content Marketing'],
+  ['Content-Marketing', 'Content-Marketing'],
+  ['Webcontent', 'Webcontent'],
+  ['Ein Content Creator', 'Ein Inhalteproduzent'],
+  ['Viele Content Creators', 'Viele Inhalteproduzenten'],
+  ['dem Content Creator', 'dem Inhalteproduzenten'],
+  ['den Creators', 'den Gestaltern'],
+  ['Creator Studio', 'Creator Studio'],
+  ['YouTube Shorts', 'YouTube Kurzvideos'],
+  ['ein YouTube Short', 'ein YouTube Kurzvideo'],
+  ['Shorts im Sommer', 'Shorts im Sommer'],
+  ['meine Wishlist', 'meine Wunschliste'],
+  ['Wish List', 'Wunschliste'],
+  ['die Wishlists', 'die Wunschlisten']
+];
+for (const [input, want] of ANG) {
+  test('Anglizismen: ' + input, () => { assert.equal(run(input, onAng), want); });
+}
+test('Anglizismen: Standard aus', () => { assert.equal(run('Diversity und Content'), 'Diversity und Content'); });
+test('Anglizismen: nicht auf nicht-deutschen Seiten', () => {
+  const o = E.buildOptions(onAng.rules ? { rules: onAng.rules } : E.DEFAULT_SETTINGS);
+  assert.equal(o.german, false);
+  assert.equal(run('Diversity und Content', o), 'Diversity und Content');
+});
+
+// --- Zähler je Regelgruppe und Unterschiede ---
+test('Statistik: Zähler je Regelgruppe', () => {
+  const st = {};
+  const out = E.entgender('Liebe Student*innen und Studenten, wir suchen Pfleger:innen (m/w/d). Diversity!', onAng, st);
+  assert.equal(out, 'Liebe Studenten, wir suchen Pfleger. Vielfalt!');
+  assert.equal(st.abbreviations, 1);
+  assert.equal(st.doubles, 1);
+  assert.equal(st.gap, 1);
+  assert.equal(st.anglicisms, 1);
+});
+test('Statistik: nichts geändert, nichts gezählt', () => {
+  const st = {};
+  E.entgender('Ganz normaler Satz ohne Besonderheiten.', onAng, st);
+  assert.deepEqual(st, {});
+});
+test('Statistik: eigene Ersetzungen', () => {
+  const o = E.buildOptions({ customReplacements: 'foo = bar' });
+  const st = {};
+  assert.equal(E.entgender('ein foo und noch ein foo', o, st), 'ein bar und noch ein bar');
+  assert.equal(st.custom, 2);
+});
+test('diffRanges: ein Wort', () => {
+  const h = E.diffRanges('Die Student*innen kommen', 'Die Studenten kommen');
+  assert.equal(h.length, 1);
+  assert.deepEqual(h[0].a, [4, 17]);
+  assert.deepEqual(h[0].b, [4, 13]);
+});
+test('diffRanges: gelöschtes Wort markiert Nachbarwort', () => {
+  const h = E.diffRanges('Wir suchen Pfleger (m/w/d) heute', 'Wir suchen Pfleger heute');
+  assert.equal(h.length, 1);
+  assert.ok(h[0].a[1] > h[0].a[0] && h[0].b[1] > h[0].b[0]);
+});
+test('diffRanges: gleiche Texte', () => { assert.deepEqual(E.diffRanges('abc def', 'abc def'), []); });
+test('Einstellungen: erweiterte Ansicht standardmäßig aus', () => {
+  const s = E.mergeSettings();
+  assert.equal(s.extendedView, false);
+  assert.equal(s.highlight, false);
+  assert.equal(s.rules.anglicisms, false);
+});

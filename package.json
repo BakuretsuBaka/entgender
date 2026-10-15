@@ -1,6 +1,6 @@
 {
   "name": "entgender",
-  "version": "1.5.2",
+  "version": "1.6.0",
   "description": "Browser-Erweiterung, die Gendersprache auf Webseiten entfernt",
   "license": "MIT",
   "private": true,

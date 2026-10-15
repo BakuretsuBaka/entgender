@@ -1,5 +1,5 @@
-// Entgender: Service-Worker. Sammelt die Zähler aller Frames eines Tabs und
-// zeigt die Summe als Badge am Symbol der Erweiterung an (wie bei einem Adblocker).
+// Entgender: Service-Worker. Sammelt die Zähler aller Frames eines Tabs, zeigt die Summe
+// als Badge am Symbol der Erweiterung an (wie bei einem Adblocker) und führt den Gesamtzähler.
 'use strict';
 
 const KEY = 'counts';
@@ -14,8 +14,27 @@ function save(o) {
   return chrome.storage.session.set({ [KEY]: o });
 }
 
+// Pro Frame: { n: Ersetzungen, by: Aufteilung nach Regelgruppe, m: Modus }
+function frames(o, tabId) {
+  return Object.values(o[tabId] || {}).filter(function (f) { return f && typeof f === 'object'; });
+}
+
+// Badge: nur tatsächlich ersetzte Stellen
 function total(o, tabId) {
-  return Object.values(o[tabId] || {}).reduce(function (a, b) { return a + b; }, 0);
+  return frames(o, tabId).reduce(function (a, f) { return a + (f.m === 'on' ? f.n : 0); }, 0);
+}
+
+function summary(o, tabId) {
+  const fr = frames(o, tabId);
+  const by = {};
+  let n = 0;
+  fr.forEach(function (f) {
+    n += f.n;
+    for (const k in f.by) by[k] = (by[k] || 0) + f.by[k];
+  });
+  const mode = fr.some(function (f) { return f.m === 'on'; }) ? 'on'
+    : fr.some(function (f) { return f.m === 'detect'; }) ? 'detect' : 'off';
+  return { count: n, by: by, mode: mode };
 }
 
 function format(n) {
@@ -51,9 +70,14 @@ chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
       const o = await load();
       if (msg.init && sender.frameId === 0) o[tabId] = {};
       o[tabId] = o[tabId] || {};
-      o[tabId][sender.frameId] = msg.count;
+      o[tabId][sender.frameId] = { n: msg.count || 0, by: msg.by || {}, m: msg.mode || 'off' };
       await save(o);
       await setBadge(tabId, total(o, tabId));
+      // Gesamtzähler seit der Installation
+      if (msg.add > 0) {
+        const r = await chrome.storage.local.get('total');
+        await chrome.storage.local.set({ total: (r.total || 0) + msg.add });
+      }
     });
     return;
   }
@@ -61,7 +85,7 @@ chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
   if (msg.type === 'entgender:get') {
     enqueue(async function () {
       const o = await load();
-      sendResponse(total(o, msg.tabId));
+      sendResponse(summary(o, msg.tabId));
     });
     return true;
   }

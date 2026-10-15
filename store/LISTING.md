@@ -19,9 +19,11 @@ Was ersetzt wird:
 • Substantivierte Partizipien: Studierende, Zuschauende, Teilnehmende werden zu Studenten, Zuschauer, Teilnehmer (nur als Personenbezeichnung, nicht bei Adjektiven)
 • Abkürzungen in Stellenanzeigen: (m/w/d), (all genders), (gn) werden entfernt
 • Zusammensetzungen: SchülerInnenvertretung wird zu Schülervertretung
+• Optional (aus): „mensch“ als „man“, ältere Begriffe statt neuer Sprachregelungen, Anglizismen auf deutschen Seiten (Homepage zu Startseite, Content zu Inhalt)
 
 Bedienung:
 • Zähler am Symbol zeigt, wie viele Stellen auf der Seite angepasst wurden
+• Erweiterte Ansicht (optional): Ersetzungen seit der Installation, Aufteilung nach Regelgruppe, geänderte Wörter farbig markieren
 • Popup: global oder pro Seite ein- und ausschalten, die Originaltexte kommen sofort zurück
 • Einstellungen: Regelgruppen einzeln wählen, Testfeld mit Live-Ergebnis, eigene Ersetzungen, Ausnahmen, ausgeschlossene Seiten
 • Funktioniert auch bei nachgeladenen Inhalten

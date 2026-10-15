@@ -37,30 +37,89 @@
     });
   }
 
+  const TYPES = [
+    ['gap', 'Genderzeichen und Binnen-I'],
+    ['doubles', 'Doppelformen'],
+    ['determiners', 'Artikel mit Genderzeichen'],
+    ['articles', 'Artikel- und Pronomenpaare'],
+    ['participles', 'Partizipien'],
+    ['abbreviations', 'Abkürzungen (m/w/d)'],
+    ['indefinite', '"mensch" und "frau" als "man"'],
+    ['oldTerms', 'Ältere Begriffe'],
+    ['oldTermsHarsh', 'Abwertende Begriffe'],
+    ['anglicisms', 'Anglizismen'],
+    ['custom', 'Eigene Ersetzungen']
+  ];
+
+  function num(n) { return Number(n).toLocaleString('de-DE'); }
+
+  function renderExtended(info) {
+    const ext = $('ext');
+    ext.hidden = !settings.extendedView;
+    if (!settings.extendedView) return;
+    $('hl').checked = settings.highlight;
+    $('hlNote').textContent = info && info.hl === false
+      ? 'Dieser Browser kann Wörter nicht markieren.'
+      : 'Grün: ersetzt. Rot: würde ersetzt, wenn die Erweiterung an wäre.';
+    const list = $('types');
+    list.textContent = '';
+    const by = (info && info.by) || {};
+    let any = false;
+    TYPES.forEach(function (t) {
+      if (!by[t[0]]) return;
+      any = true;
+      const li = document.createElement('li');
+      const name = document.createElement('span');
+      name.textContent = t[1];
+      const n = document.createElement('span');
+      n.textContent = num(by[t[0]]);
+      li.appendChild(name);
+      li.appendChild(n);
+      list.appendChild(li);
+    });
+    if (!any) {
+      const li = document.createElement('li');
+      li.className = 'muted';
+      li.textContent = info ? 'Noch nichts angepasst' : '–';
+      list.appendChild(li);
+    }
+    chrome.storage.local.get('total', function (r) {
+      $('total').textContent = num((r && r.total) || 0);
+    });
+  }
+
   function render(info) {
     $('enabled').checked = settings.enabled;
     if (!info) {
-      $('site').disabled = true;
-      $('site').checked = false;
-      $('siteLabel').textContent = 'Auf dieser Seite nicht verfügbar';
-      $('count').textContent = '';
+      // Browserseiten, Stores und vor der Installation geöffnete Seiten: dort läuft kein Skript
+      $('site').hidden = true;
+      $('siteLabel').textContent = 'Diese Seite wird nicht unterstützt';
+      $('count').textContent = 'Das gilt für Browserseiten, Stores und Seiten, die schon vor der Installation offen waren (dann neu laden).';
+      renderExtended(null);
       return;
     }
     host = info.host;
+    $('site').hidden = false;
     $('site').disabled = !host;
     $('site').checked = !E.siteDisabled(settings.disabledSites, host);
     $('siteLabel').textContent = host ? 'Auf ' + host + ' aktiv' : 'Auf dieser Seite aktiv';
-    $('count').textContent = settings.enabled && $('site').checked
-      ? (info.count === 1 ? '1 Stelle auf dieser Seite angepasst' : info.count + ' Stellen auf dieser Seite angepasst')
-      : 'Auf dieser Seite deaktiviert';
+    const on = settings.enabled && $('site').checked;
+    if (on) {
+      $('count').textContent = info.count === 1 ? '1 Stelle auf dieser Seite angepasst' : info.count + ' Stellen auf dieser Seite angepasst';
+    } else if (info.mode === 'detect') {
+      $('count').textContent = info.count === 1 ? 'Aus. 1 Stelle würde ersetzt.' : 'Aus. ' + info.count + ' Stellen würden ersetzt.';
+    } else {
+      $('count').textContent = settings.enabled ? 'Auf dieser Seite ausgeschaltet' : 'Erweiterung ausgeschaltet';
+    }
+    renderExtended(info);
   }
 
-  function getTotal(tab, fallback) {
+  function getSummary(tab, fallback) {
     return new Promise(function (resolve) {
       if (!tab || tab.id == null) return resolve(fallback);
-      chrome.runtime.sendMessage({ type: 'entgender:get', tabId: tab.id }, function (n) {
+      chrome.runtime.sendMessage({ type: 'entgender:get', tabId: tab.id }, function (r) {
         void chrome.runtime.lastError;
-        resolve(typeof n === 'number' ? n : fallback);
+        resolve(r && typeof r === 'object' ? r : fallback);
       });
     });
   }
@@ -68,7 +127,10 @@
   async function refresh() {
     const tab = await activeTab();
     const info = await getInfo(tab);
-    if (info) info.count = await getTotal(tab, info.count);
+    if (info) {
+      const sm = await getSummary(tab, null);
+      if (sm) { info.count = sm.count; info.by = sm.by; info.mode = sm.mode; }
+    }
     render(info);
   }
 
@@ -84,6 +146,12 @@
       return !(host === d || host.endsWith('.' + d));
     });
     if (!$('site').checked) settings.disabledSites.push(bare);
+    save();
+    setTimeout(refresh, 400);
+  });
+
+  $('hl').addEventListener('change', function () {
+    settings.highlight = $('hl').checked;
     save();
     setTimeout(refresh, 400);
   });

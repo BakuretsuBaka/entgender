@@ -18,7 +18,9 @@
     enabled: true,
     onlyGerman: false,
     disabledSites: [],
-    rules: { gap: true, doubles: true, determiners: true, articles: true, participles: true, abbreviations: true, indefinite: false, oldTerms: false, oldTermsHarsh: false },
+    rules: { gap: true, doubles: true, determiners: true, articles: true, participles: true, abbreviations: true, indefinite: false, oldTerms: false, oldTermsHarsh: false, anglicisms: false },
+    extendedView: false,
+    highlight: false,
     customReplacements: '',
     ignoreWords: ''
   };
@@ -30,6 +32,8 @@
       onlyGerman: !!s.onlyGerman,
       disabledSites: Array.isArray(s.disabledSites) ? s.disabledSites.filter(Boolean) : [],
       rules: Object.assign({}, DEFAULT_SETTINGS.rules, s.rules || {}),
+      extendedView: !!s.extendedView,
+      highlight: !!s.highlight,
       customReplacements: typeof s.customReplacements === 'string' ? s.customReplacements : '',
       ignoreWords: typeof s.ignoreWords === 'string' ? s.ignoreWords : ''
     };
@@ -74,7 +78,9 @@
     return {
       rules: s.rules,
       custom: parseCustom(s.customReplacements),
-      ignore: parseList(s.ignoreWords)
+      ignore: parseList(s.ignoreWords),
+      // Anglizismen wirken nur auf deutschen Seiten; wer die Optionen baut, setzt das je nach Seite
+      german: false
     };
   }
 
@@ -272,7 +278,9 @@
     let pos = 0;
     let m;
     while ((m = re.exec(t)) !== null) {
-      const r = fn.apply(null, m);
+      const args = Array.prototype.slice.call(m);
+      args.push(m.index, t);
+      const r = fn.apply(null, args);
       if (r === null) { re.lastIndex = m.index + 1; continue; }
       out += t.slice(pos, m.index) + r;
       pos = m.index + m[0].length;
@@ -838,47 +846,273 @@
   }
 
   // ---------------------------------------------------------------------
+  // Anglizismen (nur auf deutschen Seiten, siehe opts.german)
+  // ---------------------------------------------------------------------
+
+  // Nicht mitten in Wörtern und nicht in Bindestrich-Zusammensetzungen (Content-Marketing)
+  const ANG_PRE = P`(?<![\p{L}\-‐‑])`;
+  const ANG_POST = P`(?![\p{L}]|[\-‐‑]\p{L})`;
+  const ANG_DET = P`(?:[Dd](?:ie|er|as|es|em|en)|(?:[Ee]in|[Kk]ein|[Mm]ein|[Dd]ein|[Ss]ein|[Ii]hr|[Uu]nser|[Dd]ies|[Jj]ed|[Ww]elch|[Mm]anch)(?:e|er|es|em|en)?)`;
+  const ANG_STEMS = ['unser', 'kein', 'mein', 'dein', 'sein', 'ihr', 'ein', 'dies', 'jed', 'welch', 'manch'];
+  const ANG_STRONG = new Set(['dies', 'jed', 'welch', 'manch']);
+  const NOM_WORDS = new Set(['dass', 'weil', 'wenn', 'ob', 'als', 'dann', 'denn', 'doch', 'aber', 'sondern']);
+
+  function detParts(w) {
+    const l = w.toLowerCase();
+    if (/^(?:die|der|das|des|dem|den)$/.test(l)) return { def: true, l: l };
+    for (let i = 0; i < ANG_STEMS.length; i++) {
+      const st = ANG_STEMS[i];
+      if (l.startsWith(st)) {
+        const rest = l.slice(st.length);
+        if (/^(?:e|er|es|em|en)?$/.test(rest)) return { stem: st, rest: rest, strong: ANG_STRONG.has(st) };
+      }
+    }
+    return null;
+  }
+
+  // Wofür steht der Artikel vor einem Nomen des Geschlechts `from`?
+  // 'na' Nominativ/Akkusativ, 'g' Genitiv, 'd' Dativ, 'keep' (passt nicht zu `from`), 'skip' (nicht eindeutig)
+  function detRole(from, p, prepCase, hasS) {
+    if (from === 'f') {
+      if (p.def ? p.l === 'die' : p.rest === 'e') return 'na';
+      if (p.def ? p.l === 'der' : p.rest === 'er') return prepCase || 'skip';
+      return 'keep';
+    }
+    if (p.def) return p.l === 'das' ? 'na' : p.l === 'des' ? 'g' : p.l === 'dem' ? 'd' : 'keep';
+    if (p.strong) return p.rest === 'es' ? (hasS ? 'g' : 'na') : p.rest === 'em' ? 'd' : 'keep';
+    return p.rest === '' ? 'na' : p.rest === 'es' ? 'g' : p.rest === 'em' ? 'd' : 'keep';
+  }
+
+  function buildDet(to, role, p) {
+    if (p.def) {
+      if (to === 'n') return { na: 'das', g: 'des', d: 'dem' }[role];
+      if (to === 'f') return role === 'na' ? 'die' : 'der';
+      return role === 'nom' ? 'der' : 'den';
+    }
+    if (to === 'n') return p.stem + { na: p.strong ? 'es' : '', g: 'es', d: 'em' }[role];
+    if (to === 'f') return p.stem + (role === 'na' ? 'e' : 'er');
+    return p.stem + (role === 'nom' ? (p.strong ? 'er' : '') : 'en');
+  }
+
+  function genS(w) { return /(?:[sßxz]|sch)$/.test(w) ? 'es' : 's'; }
+
+  const ANG_NOCAP = P`(?!\s+\p{Lu})`;
+  // src: Quelle, sfx: erlaubt ein angehängtes s (Mehrzahl oder Genitiv), sg/pl: Ersatz,
+  // weak: schwache Deklination, from/to: Geschlecht von Original und Ersatz (nur wenn es wechselt)
+  const ANG_SPECS = [
+    { src: P`Content[ \-‐‑]?Creator`, sfx: true, sg: 'Inhalteproduzent', weak: true, after: ANG_NOCAP },
+    { src: P`Creator`, sfx: true, sg: 'Gestalter', pl: 'Gestalter', after: ANG_NOCAP },
+    { src: P`Content`, sfx: true, sg: 'Inhalt', pl: 'Inhalte', after: ANG_NOCAP },
+    { src: P`[Ss]afe\s?[Ss]pace`, sfx: true, sg: 'Schutzraum', pl: 'Schutzräume' },
+    { src: P`[Hh]omepage`, sfx: true, sg: 'Startseite', pl: 'Startseiten', to: 'f' },
+    { src: P`[Ww]ish\s?[Ll]ist`, sfx: true, sg: 'Wunschliste', pl: 'Wunschlisten', to: 'f' },
+    { src: P`Diversity`, sg: 'Vielfalt', to: 'f' },
+    { src: P`Empowerment`, sfx: true, sg: 'Ermächtigung', from: 'n', to: 'f' },
+    { src: P`Awareness`, sg: 'Bewusstsein', from: 'f', to: 'n' },
+    { src: P`[Rr]agebait`, sfx: true, sg: 'Wutköder', pl: 'Wutköder', from: 'n', to: 'm' }
+  ].map(function (sp) {
+    sp.re = new RegExp(
+      P`${ANG_PRE}(?:(${ANG_DET})\s+)?(${sp.src})(${sp.sfx ? 's?' : ''})${sp.after || ''}${ANG_POST}`, 'gu');
+    return sp;
+  });
+
+  const reShort = new RegExp(
+    P`${ANG_PRE}(YouTube|Instagram|TikTok|Facebook|Snapchat|Pinterest)([ \-‐‑])Short(s?)${ANG_POST}`, 'gu');
+  const reRagebaiten = new RegExp(P`${ANG_PRE}([Rr])agebaiten${ANG_POST}`, 'gu');
+
+  const QUICK_ANG = new RegExp(
+    P`Diversity|Empowerment|[Rr]agebait|Awareness|[Ss]afe\s?[Ss]pace|[Hh]omepage|Content|Creator|Short|[Ww]ish\s?[Ll]ist`, 'u');
+
+  function angReplace(t, sp, opts) {
+    return scan(sp.re, t, function (m, det, word, sfx, offset, str) {
+      if (ignored(m, opts)) return m;
+      const wordStart = offset + m.length - word.length - sfx.length;
+      const beforeWord = str.slice(0, wordStart);
+      const beforeDet = str.slice(0, offset);
+      const change = sp.from && sp.from !== sp.to;
+      let role = 'keep';
+      let newDet = null;
+
+      if (change) {
+        if (!det) {
+          // Artikel plus Adjektiv davor ("die neue Awareness"): Endung des Adjektivs passt nicht mehr
+          const w = beforeWord.split(reClauseCut).pop().trim().split(/\s+/).filter(Boolean);
+          if (w.length >= 2 && /^\p{Ll}{2,}(?:e|en|er|es|em)$/u.test(w[w.length - 1]) &&
+              detParts(w[w.length - 2])) return m;
+        } else {
+          const p = detParts(det);
+          if (p) {
+            const lw = lastWord(beforeDet);
+            const prepCase = DAT_PREP.has(lw) ? 'd' : GEN_PREP.has(lw) ? 'g' : null;
+            role = detRole(sp.from, p, prepCase, sfx === 's');
+            if (role === 'skip') return m;
+            if (role !== 'keep') {
+              if (sp.to === 'm') {
+                // Neutrum nach Maskulinum: Nominativ oder Akkusativ muss erkennbar sein
+                if (role === 'na') {
+                  const cut = beforeDet.split(reClauseCut);
+                  const clauseStart = cut[cut.length - 1].trim() === '';
+                  if (clauseStart || NOM_WORDS.has(lw)) newDet = buildDet('m', 'nom', p);
+                  else if (ACC_PREP.has(lw)) newDet = buildDet('m', 'acc', p);
+                  else return m;
+                }
+              } else {
+                newDet = buildDet(sp.to, role, p);
+              }
+            }
+          }
+        }
+      }
+
+      const cs = role === 'g' ? 'G' : singCase(beforeWord);
+      let noun;
+      if (sp.weak) {
+        noun = sp.sg + (sfx || cs ? 'en' : '');
+      } else if (sp.to === 'f') {
+        noun = sfx && sp.pl ? (pluralDative(beforeWord) ? dativePlural(sp.pl) : sp.pl) : sp.sg;
+      } else if (cs === 'G') {
+        noun = sp.sg + genS(sp.sg);
+      } else if (sfx) {
+        noun = pluralDative(beforeWord) ? dativePlural(sp.pl) : sp.pl;
+      } else {
+        noun = sp.sg;
+      }
+
+      let prefix = m.slice(0, m.length - word.length - sfx.length);
+      if (newDet) prefix = matchCase(det, newDet) + prefix.slice(det.length);
+      return prefix + noun;
+    });
+  }
+
+  function anglicisms(t, opts) {
+    for (let i = 0; i < ANG_SPECS.length; i++) t = angReplace(t, ANG_SPECS[i], opts);
+    t = scan(reShort, t, function (m, site, sep, s) {
+      return ignored(m, opts) ? null : site + sep + (s ? 'Kurzvideos' : 'Kurzvideo');
+    });
+    return scan(reRagebaiten, t, function (m, r) {
+      return ignored(m, opts) ? null : (r === 'R' ? 'Wutködern' : 'wutködern');
+    });
+  }
+
+  // ---------------------------------------------------------------------
+  // Unterschiede zwischen zwei Texten (Zähler und Markierungen)
+  // ---------------------------------------------------------------------
+
+  const reToken = new RegExp(P`[\p{L}\p{N}]+(?:[*∗＊﹡⋆:：꞉_＿·•‧∙⋅\/\-'’][\p{L}\p{N}]*)*`, 'gu');
+
+  function tokenize(s) {
+    const out = [];
+    reToken.lastIndex = 0;
+    let m;
+    while ((m = reToken.exec(s)) !== null) out.push({ s: m.index, e: m.index + m[0].length, w: m[0] });
+    return out;
+  }
+
+  // Zusammenhängende geänderte Wortgruppen: [{a: [von, bis], b: [von, bis]}]. Bei reinen Löschungen
+  // wird das angrenzende Wort der Gegenseite genommen, damit immer etwas markiert werden kann.
+  function diffRanges(a, b) {
+    if (a === b) return [];
+    const ta = tokenize(a);
+    const tb = tokenize(b);
+    let pre = 0;
+    while (pre < ta.length && pre < tb.length && ta[pre].w === tb[pre].w) pre++;
+    let suf = 0;
+    while (suf < ta.length - pre && suf < tb.length - pre &&
+           ta[ta.length - 1 - suf].w === tb[tb.length - 1 - suf].w) suf++;
+    const A = ta.slice(pre, ta.length - suf);
+    const B = tb.slice(pre, tb.length - suf);
+    // gemeinsame Wörter (LCS) in der Mitte, falls überschaubar
+    const pairs = [];
+    if (A.length && B.length && A.length * B.length <= 160000) {
+      const w = B.length + 1;
+      const L = new Uint16Array((A.length + 1) * w);
+      for (let i = A.length - 1; i >= 0; i--) {
+        for (let j = B.length - 1; j >= 0; j--) {
+          L[i * w + j] = A[i].w === B[j].w ? L[(i + 1) * w + j + 1] + 1
+            : Math.max(L[(i + 1) * w + j], L[i * w + j + 1]);
+        }
+      }
+      let i = 0, j = 0;
+      while (i < A.length && j < B.length) {
+        if (A[i].w === B[j].w) { pairs.push([i, j]); i++; j++; }
+        else if (L[(i + 1) * w + j] >= L[i * w + j + 1]) i++;
+        else j++;
+      }
+    }
+    pairs.push([A.length, B.length]);
+    const hunks = [];
+    let ia = 0, ib = 0;
+    pairs.forEach(function (pr) {
+      if (pr[0] > ia || pr[1] > ib) {
+        const sa = ta[pre + ia], ea = ta[pre + pr[0] - 1];
+        const sb = tb[pre + ib], eb = tb[pre + pr[1] - 1];
+        const near = function (list, idx) { return list[idx] || list[idx - 1]; };
+        const ra = pr[0] > ia ? [sa.s, ea.e] : (function () { const n = near(ta, pre + ia); return n ? [n.s, n.e] : [0, a.length]; })();
+        const rb = pr[1] > ib ? [sb.s, eb.e] : (function () { const n = near(tb, pre + ib); return n ? [n.s, n.e] : [0, b.length]; })();
+        hunks.push({ a: ra, b: rb });
+      }
+      ia = pr[0] + 1;
+      ib = pr[1] + 1;
+    });
+    if (!hunks.length) hunks.push({ a: [0, a.length], b: [0, b.length] });
+    return hunks;
+  }
+
+  // ---------------------------------------------------------------------
   // Einstiegspunkt
   // ---------------------------------------------------------------------
 
   // Unsichtbare Trennzeichen (Soft Hyphen, Zero-Width-Zeichen), die Seiten in Wörter einbauen
-  const INVISIBLE = /[\u00AD\u200B\u200C\u200D\u2060]/;
-  const INVISIBLE_ALL = /[\u00AD\u200B\u200C\u200D\u2060]/g;
+  const INVISIBLE = /[­​‌‍⁠]/;
+  const INVISIBLE_ALL = /[­​‌‍⁠]/g;
 
-  function entgender(text, opts) {
+  // stats (optional): Objekt, in dem je Regelgruppe die Zahl der Ersetzungen mitgezählt wird.
+  function entgender(text, opts, stats) {
     if (INVISIBLE.test(text)) {
       // Erst ohne Trennzeichen prüfen: Wurde nichts geändert, bleibt der Originaltext erhalten.
       const plain = text.replace(INVISIBLE_ALL, '');
-      const out = entgenderCore(plain, opts);
+      const out = entgenderCore(plain, opts, stats);
       return out === plain ? text : out;
     }
-    return entgenderCore(text, opts);
+    return entgenderCore(text, opts, stats);
   }
 
-  function entgenderCore(text, opts) {
+  function entgenderCore(text, opts, stats) {
     let t = text;
-    for (let i = 0; i < opts.custom.length; i++) {
-      opts.custom[i].re.lastIndex = 0;
-      t = t.replace(opts.custom[i].re, function () { return opts.custom[i].to; });
+    const run = function (name, fn) {
+      const before = t;
+      t = fn(before);
+      if (stats && t !== before) stats[name] = (stats[name] || 0) + diffRanges(before, t).length;
+    };
+    if (opts.custom.length) {
+      run('custom', function (x) {
+        for (let i = 0; i < opts.custom.length; i++) {
+          opts.custom[i].re.lastIndex = 0;
+          x = x.replace(opts.custom[i].re, function () { return opts.custom[i].to; });
+        }
+        return x;
+      });
     }
     if (t.length < 4) return t;
     const r = opts.rules;
     const gq = QUICK.test(t);
     const tq = (r.oldTerms || r.oldTermsHarsh) && QUICK_TERMS.test(t);
-    if (!gq && !tq) return t;
+    const aq = r.anglicisms && opts.german && QUICK_ANG.test(t);
+    if (!gq && !tq && !aq) return t;
     if (gq) {
-      if (r.determiners) t = determiners(t);
-      if (r.articles) t = articles(t);
-      if (r.abbreviations) t = abbreviations(t, opts);
-      if (r.indefinite) t = indefinite(t, opts);
-      if (r.doubles) t = doubles(t, opts);
-      if (r.gap) t = gap(t, opts);
-      if (r.participles) t = participles(t, opts);
+      if (r.determiners) run('determiners', determiners);
+      if (r.articles) run('articles', articles);
+      if (r.abbreviations) run('abbreviations', function (x) { return abbreviations(x, opts); });
+      if (r.indefinite) run('indefinite', function (x) { return indefinite(x, opts); });
+      if (r.doubles) run('doubles', function (x) { return doubles(x, opts); });
+      if (r.gap) run('gap', function (x) { return gap(x, opts); });
+      if (r.participles) run('participles', function (x) { return participles(x, opts); });
     }
     if (tq) {
-      if (r.oldTerms) t = oldTerms(t, opts);
-      if (r.oldTermsHarsh) t = oldTermsHarsh(t, opts);
+      if (r.oldTerms) run('oldTerms', function (x) { return oldTerms(x, opts); });
+      if (r.oldTermsHarsh) run('oldTermsHarsh', function (x) { return oldTermsHarsh(x, opts); });
     }
+    if (aq) run('anglicisms', function (x) { return anglicisms(x, opts); });
     return t;
   }
 
@@ -889,6 +1123,7 @@
     siteDisabled: siteMatches,
     entgender: entgender,
     quickCheck: quickCheck,
+    diffRanges: diffRanges,
     whiteItalic: whiteItalic,
     pluralMasc: pluralMasc,
     singularMasc: singularMasc

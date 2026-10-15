@@ -7,13 +7,16 @@
     'Liebe Student*innen und Studenten, jede*r Ärzt:in und alle Patientinnen und Patienten ' +
     'sind eingeladen. Die Lehrer/innen, der/die Schüler_in und die BürgerInnen kommen auch. ' +
     'Auch alle Studierenden und Zuschauende sind willkommen. ' +
-    'Wir suchen Pfleger:innen (m/w/d), die mit Kolleg*innen arbeiten.';
+    'Wir suchen Pfleger:innen (m/w/d), die mit Kolleg*innen arbeiten. ' +
+    'Sprachexpertinnen und -experten helfen auf der Homepage.';
   let settings = E.mergeSettings();
   let saveTimer = 0;
 
   function fromForm() {
     return {
       enabled: settings.enabled,
+      extendedView: $('extendedView').checked,
+      highlight: settings.highlight,
       onlyGerman: $('onlyGerman').checked,
       disabledSites: $('sites').value.split(/[\r\n,]+/).map(function (x) {
         return x.trim().toLowerCase();
@@ -27,7 +30,8 @@
         abbreviations: $('r-abbreviations').checked,
         indefinite: $('r-indefinite').checked,
         oldTerms: $('r-oldTerms').checked,
-        oldTermsHarsh: $('r-oldTermsHarsh').checked
+        oldTermsHarsh: $('r-oldTermsHarsh').checked,
+        anglicisms: $('r-anglicisms').checked
       },
       customReplacements: $('custom').value,
       ignoreWords: $('ignore').value
@@ -46,12 +50,16 @@
     $('r-indefinite').checked = s.rules.indefinite;
     $('r-oldTerms').checked = s.rules.oldTerms;
     $('r-oldTermsHarsh').checked = s.rules.oldTermsHarsh;
+    $('r-anglicisms').checked = s.rules.anglicisms;
+    $('extendedView').checked = s.extendedView;
     $('custom').value = s.customReplacements;
     $('ignore').value = s.ignoreWords;
   }
 
   function preview() {
-    $('out').value = E.entgender($('in').value, E.buildOptions(fromForm()));
+    const o = E.buildOptions(fromForm());
+    o.german = true; // das Testfeld ist deutsch, Anglizismen sollen sichtbar sein
+    $('out').value = E.entgender($('in').value, o);
   }
 
   function save() {
@@ -68,7 +76,7 @@
     saveTimer = setTimeout(save, 400);
   }
 
-  ['onlyGerman', 'sites', 'r-gap', 'r-doubles', 'r-determiners', 'r-articles', 'r-participles', 'r-abbreviations', 'r-indefinite', 'r-oldTerms', 'r-oldTermsHarsh', 'custom', 'ignore']
+  ['onlyGerman', 'sites', 'r-gap', 'r-doubles', 'r-determiners', 'r-articles', 'r-participles', 'r-abbreviations', 'r-indefinite', 'r-oldTerms', 'r-oldTermsHarsh', 'r-anglicisms', 'extendedView', 'custom', 'ignore']
     .forEach(function (id) {
       $(id).addEventListener('input', changed);
       $(id).addEventListener('change', changed);
