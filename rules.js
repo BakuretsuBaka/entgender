@@ -191,7 +191,7 @@
   const reDetSing = new RegExp(P`(?<![\p{L}])(${DET_SING})(?:[${MARK}\/]e|E)(?![\p{L}])`, 'gu');
 
   const QUICK = new RegExp(
-    P`[${MARK}\/(]|\p{Ll}[.’']in(?:nen)?(?![\p{L}])|(?<![\p{L}])(?:mensch|frau)(?![\p{L}])|\p{Ll}(?:Innen|In|E|R|N|M|S)(?!\p{L})|\p{Ll}Innen(?=\p{Ll})|in(?:nen)?\s+(?:und|oder|sowie|bzw|beziehungsweise)|(?:und|oder|sowie|bzw\.?|beziehungsweise)\s+(?:\p{L}+\s+)?\p{Lu}\p{L}*in(?:nen)?(?!\p{L})|\p{Lu}\p{L}*ende[nrsm]?(?![\p{L}])`,
+    P`[${MARK}\/(|]|\p{Ll}[.’']in(?:nen)?(?![\p{L}])|(?<![\p{L}])(?:mensch|frau)(?![\p{L}])|\p{Ll}(?:Innen|In|E|R|N|M|S)(?!\p{L})|\p{Ll}Innen(?=\p{Ll})|in(?:nen)?\s+(?:und|oder|sowie|bzw|beziehungsweise)|(?:und|oder|sowie|bzw\.?|beziehungsweise)\s+(?:\p{L}+\s+)?\p{Lu}\p{L}*in(?:nen)?(?!\p{L})|\p{Lu}\p{L}*ende[nrsm]?(?![\p{L}])`,
     'u');
 
   const QUICK_TERMS = new RegExp(
@@ -265,7 +265,7 @@
     P`[ \t]*[(\[]\s*(?:${ABB_TWO}\*?|${ABB_MULTI}\*?|${ABB_WORDS})\s*[)\]]`, 'giu');
   // Ohne Klammern nur Dreiergruppen direkt hinter einem Wort: "Entwickler m/w/d"
   const reAbbrBare = new RegExp(
-    P`(?<=[\p{L})])[ \t]+${ABB_MULTI}\*?(?![\p{L}\d\/])`, 'giu');
+    P`(?<=[\p{L})])(?:[ \t]*[-–—|][ \t]*|[ \t]+)${ABB_MULTI}\*?(?![\p{L}\d\/|])`, 'giu');
 
   function abbreviations(t, opts) {
     t = t.replace(reAbbrBr, function (m) { return ignored(m, opts) ? m : ''; });
@@ -429,6 +429,7 @@
   const reSpaceAfter = /(?<=\p{L}{4}[*∗＊_\/])[ \t\u00a0]+(?=in(?:nen)?(?![\p{L}]))/gu;
 
   function gap(t, opts) {
+    t = t.replace(/(?<=\p{L}{3}\/)(In|Innen)(?![\p{L}])/gu, function (m) { return m.toLowerCase(); });
     t = t.replace(reSpaceBefore, '$1').replace(reSpaceAfter, '');
     t = t.replace(reDotMark, '$1*$2');
     t = t.replace(reCompoundSep, '').replace(reCompoundBI, '');

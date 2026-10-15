@@ -670,3 +670,14 @@ test('Leerzeichen um das Genderzeichen', () => {
   assert.equal(run('Er und/ in'), 'Er und/ in');
   assert.equal(run('Das 2 * in der Mitte'), 'Das 2 * in der Mitte');
 });
+
+test('Abkürzungen mit Trennstrich oder senkrechtem Strich, Schrägstrich mit großem I', () => {
+  assert.equal(run('Tischler - m|w|d'), 'Tischler');
+  assert.equal(run('Tischler m|w|d'), 'Tischler');
+  assert.equal(run('Tischler – m/w/d gesucht'), 'Tischler gesucht');
+  assert.equal(run('Tischler | m/w/d | Vollzeit'), 'Tischler | Vollzeit');
+  assert.equal(run('Menü | Start | Hilfe'), 'Menü | Start | Hilfe');
+  assert.equal(run('Das ist a|b|c'), 'Das ist a|b|c');
+  assert.equal(run('Tischler/In'), 'Tischler');
+  assert.equal(run('Wir suchen Tischler/Innen'), 'Wir suchen Tischler');
+});
