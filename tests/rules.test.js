@@ -643,3 +643,11 @@ test('Phettberg-Gendern: Wortliste der Quelle', () => {
   ];
   C.forEach(function (c) { assert.equal(run(c[0]), c[1], c[0]); });
 });
+
+test('Artikelpaar ohne Hauptwort danach und kursives Weißsein', () => {
+  assert.equal(run('der*die neue Kollege'), 'der neue Kollege');
+  assert.equal(run('Wer ist der*die?'), 'Wer ist der?');
+  assert.equal(run('Der/die Beste'), 'Der Beste');
+  assert.equal(E.whiteItalic('Weißsein', 'das ', ' ist'), 'Weißsein');
+  assert.equal(E.whiteItalic('weißseins', '', ''), 'weißseins');
+});

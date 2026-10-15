@@ -231,12 +231,13 @@
   // Trennzeichen zwischen Artikel- und Pronomenpaaren: Schrägstrich oder Gender-Zeichen
   const PS = P`[\/${MARK}]`;
   const reArt = [
-    [P`(?<![\p{L}])([Dd])(?:er${PS}[Dd]ie|ie${PS}[Dd]er)(?=\s+\p{Lu})`, '$1er'],
-    [P`(?<![\p{L}])([Ee])in(?:${PS}[Ee]ine|e${PS}[Ee]in)(?=\s+\p{Lu})`, '$1in'],
-    [P`(?<![\p{L}])([Dd])(?:em${PS}[Dd]er|er${PS}[Dd]em)(?=\s+\p{Lu})`, '$1em'],
-    [P`(?<![\p{L}])([Dd])(?:es${PS}[Dd]er|er${PS}[Dd]es)(?=\s+\p{Lu})`, '$1es'],
-    [P`(?<![\p{L}])([Dd])(?:en${PS}[Dd]ie|ie${PS}[Dd]en)(?=\s+\p{Lu})`, '$1en'],
-    [P`(?<![\p{L}])([Ee])inem${PS}[Ee]iner(?=\s+\p{Lu})|(?<![\p{L}])([Ee])iner${PS}[Ee]inem(?=\s+\p{Lu})`,
+    [P`(?<![\p{L}])([Dd])(?:er[${MARK}][Dd]ie|ie[${MARK}][Dd]er)(?![\p{L}])`, '$1er'],
+    [P`(?<![\p{L}])([Dd])(?:er${PS}[Dd]ie|ie${PS}[Dd]er)(?=\s+\p{L})`, '$1er'],
+    [P`(?<![\p{L}])([Ee])in(?:${PS}[Ee]ine|e${PS}[Ee]in)(?=\s+\p{L})`, '$1in'],
+    [P`(?<![\p{L}])([Dd])(?:em${PS}[Dd]er|er${PS}[Dd]em)(?=\s+\p{L})`, '$1em'],
+    [P`(?<![\p{L}])([Dd])(?:es${PS}[Dd]er|er${PS}[Dd]es)(?=\s+\p{L})`, '$1es'],
+    [P`(?<![\p{L}])([Dd])(?:en${PS}[Dd]ie|ie${PS}[Dd]en)(?=\s+\p{L})`, '$1en'],
+    [P`(?<![\p{L}])([Ee])inem${PS}[Ee]iner(?=\s+\p{L})|(?<![\p{L}])([Ee])iner${PS}[Ee]inem(?=\s+\p{L})`,
       function (m, x, y) { return (x || y) + 'inem'; }],
     [P`(?<![\p{L}])([Ee])r${PS}[Ss]ie(?![\p{L}])`, '$1r'],
     [P`(?<![\p{L}])([Ss])ie${PS}[Ee]r(?![\p{L}])`, function (m, x) { return x === 'S' ? 'Er' : 'er'; }],
@@ -858,6 +859,7 @@
   // ("die weißen sind da", ohne folgendes Hauptwort) oder am Satzanfang.
   function whiteItalic(word, before, after) {
     const w = String(word).trim();
+    if (/^weißseins?$/i.test(w)) return w; // Weißsein: nur das Kursive entfernen
     if (!/^weiß(?:e|en|er|es|em)?$/i.test(w)) return null;
     before = String(before);
     const nextWord = (String(after).match(/^\s*(\p{L}[\p{L}\-]*)/u) || [])[1];
