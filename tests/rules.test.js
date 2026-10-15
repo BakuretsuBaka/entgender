@@ -602,3 +602,12 @@ test('Einstellungen: erweiterte Ansicht standardmäßig aus', () => {
   assert.equal(s.highlight, false);
   assert.equal(s.rules.anglicisms, false);
 });
+
+test('Zitate in Anführungszeichen: standardmäßig verändert, optional nicht', () => {
+  const q = E.buildOptions({ skipQuotes: true });
+  assert.equal(run('Er sagte „Liebe Kolleg*innen“ und die Lehrer*innen kamen.'), 'Er sagte „Liebe Kollegen“ und die Lehrer kamen.');
+  assert.equal(run('Er sagte „Liebe Kolleg*innen“ und die Lehrer*innen kamen.', q), 'Er sagte „Liebe Kolleg*innen“ und die Lehrer kamen.');
+  assert.equal(run('Sie rief "Schüler*innen" laut: Student*innen!', q), 'Sie rief "Schüler*innen" laut: Studenten!');
+  assert.equal(run('»Ärzt:innen« und Pfleger:innen', q), '»Ärzt:innen« und Pfleger');
+  assert.equal(E.mergeSettings().skipQuotes, false);
+});

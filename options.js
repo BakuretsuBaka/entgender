@@ -15,6 +15,7 @@
   function fromForm() {
     return {
       enabled: settings.enabled,
+      skipQuotes: $('skipQuotes').checked,
       extendedView: $('extendedView').checked,
       highlight: settings.highlight,
       onlyGerman: $('onlyGerman').checked,
@@ -51,6 +52,7 @@
     $('r-oldTerms').checked = s.rules.oldTerms;
     $('r-oldTermsHarsh').checked = s.rules.oldTermsHarsh;
     $('r-anglicisms').checked = s.rules.anglicisms;
+    $('skipQuotes').checked = s.skipQuotes;
     $('extendedView').checked = s.extendedView;
     $('custom').value = s.customReplacements;
     $('ignore').value = s.ignoreWords;
@@ -76,7 +78,7 @@
     saveTimer = setTimeout(save, 400);
   }
 
-  ['onlyGerman', 'sites', 'r-gap', 'r-doubles', 'r-determiners', 'r-articles', 'r-participles', 'r-abbreviations', 'r-indefinite', 'r-oldTerms', 'r-oldTermsHarsh', 'r-anglicisms', 'extendedView', 'custom', 'ignore']
+  ['onlyGerman', 'skipQuotes', 'sites', 'r-gap', 'r-doubles', 'r-determiners', 'r-articles', 'r-participles', 'r-abbreviations', 'r-indefinite', 'r-oldTerms', 'r-oldTermsHarsh', 'r-anglicisms', 'extendedView', 'custom', 'ignore']
     .forEach(function (id) {
       $(id).addEventListener('input', changed);
       $(id).addEventListener('change', changed);

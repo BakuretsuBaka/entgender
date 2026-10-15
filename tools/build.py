@@ -103,6 +103,8 @@ USERSCRIPT_HEADER = """// ==UserScript==
     // Seiten, auf denen nichts ersetzt wird, z. B. ['example.com']
     disabledSites: [],
     rules: { gap: true, doubles: true, determiners: true, articles: true, participles: true, abbreviations: true, indefinite: false, oldTerms: false, oldTermsHarsh: false, anglicisms: false },
+    // true: Text in Anführungszeichen bleibt unverändert
+    skipQuotes: false,
     // Eigene Ersetzungen, eine pro Zeile: 'alt = neu'
     customReplacements: '',
     // Wörter, die nie angefasst werden, durch Komma oder Zeilenumbruch getrennt

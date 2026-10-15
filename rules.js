@@ -19,6 +19,7 @@
     onlyGerman: false,
     disabledSites: [],
     rules: { gap: true, doubles: true, determiners: true, articles: true, participles: true, abbreviations: true, indefinite: false, oldTerms: false, oldTermsHarsh: false, anglicisms: false },
+    skipQuotes: false,
     extendedView: false,
     highlight: false,
     customReplacements: '',
@@ -32,6 +33,7 @@
       onlyGerman: !!s.onlyGerman,
       disabledSites: Array.isArray(s.disabledSites) ? s.disabledSites.filter(Boolean) : [],
       rules: Object.assign({}, DEFAULT_SETTINGS.rules, s.rules || {}),
+      skipQuotes: !!s.skipQuotes,
       extendedView: !!s.extendedView,
       highlight: !!s.highlight,
       customReplacements: typeof s.customReplacements === 'string' ? s.customReplacements : '',
@@ -79,6 +81,7 @@
       rules: s.rules,
       custom: parseCustom(s.customReplacements),
       ignore: parseList(s.ignoreWords),
+      skipQuotes: s.skipQuotes,
       // Anglizismen wirken nur auf deutschen Seiten; wer die Optionen baut, setzt das je nach Seite
       german: false
     };
@@ -1195,14 +1198,23 @@
   const INVISIBLE_ALL = /[­​‌‍⁠]/g;
 
   // stats (optional): Objekt, in dem je Regelgruppe die Zahl der Ersetzungen mitgezählt wird.
+  // Zitate in Anführungszeichen: „…“, "…", “…”, »…«, «…»
+  const QUOTED = /(„[^“”"\n]*[“”"]|"[^"\n]*"|“[^“”\n]*”|»[^«»\n]*«|«[^«»\n]*»)/;
+
   function entgender(text, opts, stats) {
+    const inner = function (x) {
+      if (!opts.skipQuotes || !/["„“”»«]/.test(x)) return entgenderCore(x, opts, stats);
+      return x.split(QUOTED).map(function (part, i) {
+        return i % 2 ? part : entgenderCore(part, opts, stats);
+      }).join('');
+    };
     if (INVISIBLE.test(text)) {
       // Erst ohne Trennzeichen prüfen: Wurde nichts geändert, bleibt der Originaltext erhalten.
       const plain = text.replace(INVISIBLE_ALL, '');
-      const out = entgenderCore(plain, opts, stats);
+      const out = inner(plain);
       return out === plain ? text : out;
     }
-    return entgenderCore(text, opts, stats);
+    return inner(text);
   }
 
   function entgenderCore(text, opts, stats) {
