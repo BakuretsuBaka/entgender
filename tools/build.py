@@ -102,7 +102,7 @@ USERSCRIPT_HEADER = """// ==UserScript==
     onlyGerman: false,
     // Seiten, auf denen nichts ersetzt wird, z. B. ['example.com']
     disabledSites: [],
-    rules: { gap: true, doubles: true, determiners: true, articles: true, participles: true, abbreviations: true, indefinite: false, oldTerms: false, oldTermsHarsh: false, anglicisms: false },
+    rules: { gap: true, doubles: true, determiners: true, articles: true, participles: true, abbreviations: true, phettberg: true, indefinite: false, oldTerms: false, oldTermsHarsh: false, anglicisms: false },
     // true: Text in Anführungszeichen bleibt unverändert
     skipQuotes: false,
     // Eigene Ersetzungen, eine pro Zeile: 'alt = neu'

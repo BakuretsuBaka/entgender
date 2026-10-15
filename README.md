@@ -15,6 +15,7 @@ Browser-Erweiterung (Chrome und alle Chromium-Browser, Manifest V3), die Genders
 | Artikel mit Zeichen | jede\*r, jedeR, ein\*e, eine\*n | jeder, jeder, ein, einen |
 | Artikel- und Pronomenpaare | der/die Lehrer, der*die Nutzer, er/sie, seine/ihre | der Lehrer, der Nutzer, er, seine |
 | Abkürzungen | Pflegekraft (m/w/d), Koch m/w/d, (all genders), (gn) | Pflegekraft, Koch |
+| Phettberg | Lesys, das Lehry, Kollegys | Leser, der Lehrer, Kollegen |
 | Substantivierte Partizipien | Studierende, Zuschauende, Teilnehmende, Mitarbeitende | Studenten, Zuschauer, Teilnehmer, Mitarbeiter |
 
 Optional und standardmäßig aus: **„mensch“ und „frau“ als „man“** („wenn mensch das will“ wird zu „wenn man das will“, „man/frau“ zu „man“). Es wird nur kleingeschrieben ersetzt, „Mensch“ und „Frau“ als Hauptwörter bleiben stehen. Einschalten unter Einstellungen.

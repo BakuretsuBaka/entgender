@@ -44,6 +44,7 @@
     ['articles', 'Artikel- und Pronomenpaare'],
     ['participles', 'Partizipien'],
     ['abbreviations', 'Abkürzungen (m/w/d)'],
+    ['phettberg', 'Phettberg-Formen (-y, -ys)'],
     ['indefinite', '"mensch" und "frau" als "man"'],
     ['oldTerms', 'Ältere Begriffe'],
     ['oldTermsHarsh', 'Abwertende Begriffe'],

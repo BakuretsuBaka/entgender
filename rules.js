@@ -18,7 +18,7 @@
     enabled: true,
     onlyGerman: false,
     disabledSites: [],
-    rules: { gap: true, doubles: true, determiners: true, articles: true, participles: true, abbreviations: true, indefinite: false, oldTerms: false, oldTermsHarsh: false, anglicisms: false },
+    rules: { gap: true, doubles: true, determiners: true, articles: true, participles: true, abbreviations: true, phettberg: true, indefinite: false, oldTerms: false, oldTermsHarsh: false, anglicisms: false },
     skipQuotes: false,
     extendedView: false,
     highlight: false,
@@ -1217,7 +1217,74 @@
     return inner(text);
   }
 
+  // ---------------------------------------------------------------------
+  // Entgendern nach Phettberg: Lesys (Plural), das Lehry (Singular)
+  // Nur bekannte Personenbezeichnungen, damit Wörter wie Babys oder Partys unberührt bleiben.
+  // ---------------------------------------------------------------------
+
+  const PH_ER = 'Leser Lehrer Schüler Arbeiter Mitarbeiter Nutzer Benutzer Bürger Wähler Zuschauer Zuhörer Hörer Fahrer Autofahrer Radfahrer Spieler Verkäufer Käufer Politiker Künstler Nachbar Mieter Vermieter Besucher Teilnehmer Anwohner Einwohner Bewohner Fußgänger Verbraucher Anbieter Gründer Unternehmer Berater Trainer Betreuer Pfleger Erzieher Händler Redner Sprecher Leiter Bäcker Schreiber Autor Moderator Direktor Professor Sänger Tänzer Maler Fotograf Journalist Aktivist Experte Kollege Kunde Wirt Student Patient Passant Kandidat Pilot Chef Freund Gast Mensch'.split(' ');
+  const PH_N = /^(?:Student|Patient|Passant|Kandidat|Kunde|Kollege|Experte|Journalist|Aktivist|Fotograf|Mensch)$/;
+  const PH = {};
+  PH_ER.forEach(function (b) {
+    const stem = /er$/.test(b) ? b.slice(0, -2) : /e$/.test(b) ? b.slice(0, -1) : b;
+    PH[stem] = b;
+  });
+  const QUICK_PH = /\p{Lu}\p{Ll}+ys?(?![\p{L}])/u;
+  const rePh = new RegExp(P`(?:(?<![\p{L}])(das|dem|des|dieses|diesem|jedes|jedem|kein|keinem|ein|einem|eines)\s+)?(?<![\p{L}])(\p{Lu}\p{Ll}+?)(ys|y)(?![\p{L}])`, 'giu');
+  const PH_DET = {
+    das: ['der', ''], dem: ['dem', 'D'], des: ['des', 'G'], dieses: ['dieser', ''], diesem: ['diesem', 'D'],
+    jedes: ['jeder', ''], jedem: ['jedem', 'D'], kein: ['kein', ''], keinem: ['keinem', 'D'],
+    ein: ['ein', ''], einem: ['einem', 'D'], eines: ['eines', 'G']
+  };
+
+  function phettberg(t) {
+    let n = 0;
+    const out = t.replace(rePh, function (m, det, stem, end) {
+      const base = PH[stem];
+      if (!base) return m;
+      const pre = /^\p{Lu}/u.test(det || '') ? 1 : 0;
+      const cap = function (w) { return pre ? w.charAt(0).toUpperCase() + w.slice(1) : w; };
+      if (end.toLowerCase() === 'ys' && !(det && PH_DET[det.toLowerCase()] && PH_DET[det.toLowerCase()][1] === 'G')) {
+        if (det) return m; // "dem Lehrys" o. Ä.: unklar
+        n++;
+        const pl = /er$/.test(base) ? base : /e$/.test(base) ? base.slice(0, -1) : base;
+        return pl + '*innen';
+      }
+      if (!det) return m;
+      const d = PH_DET[det.toLowerCase()];
+      const gen = end.toLowerCase() === 'ys';
+      if (gen !== (d[1] === 'G')) return m;
+      n++;
+      const weak = PH_N.test(base);
+      let w = base;
+      if (d[1] === 'D' && weak) w = /e$/.test(base) ? base + 'n' : base + 'en';
+      if (gen) w = weak ? (/e$/.test(base) ? base + 'ns' : base + 'ens') : (/[sßxz]$/.test(base) ? base + 'es' : base + 's');
+      return (det === det.toLowerCase() && !pre ? d[0] : cap(d[0])) + ' ' + w;
+    });
+    return [out, n];
+  }
+
   function entgenderCore(text, opts, stats) {
+    if (opts.rules.phettberg && QUICK_PH.test(text)) {
+      const ph = phettberg(text);
+      if (ph[1]) {
+        // Die Nachbearbeitung läuft immer mit Genderzeichen-Regel, auch wenn sie sonst aus ist
+        const o2 = Object.assign({}, opts, { rules: Object.assign({}, opts.rules, { gap: true }) });
+        const tmp = stats ? {} : null;
+        const res = entgenderCore0(ph[0], o2, tmp);
+        if (stats) {
+          for (const k in tmp) stats[k] = (stats[k] || 0) + tmp[k];
+          stats.gap = Math.max(0, (stats.gap || 0) - ph[1]);
+          if (!stats.gap) delete stats.gap;
+          stats.phettberg = (stats.phettberg || 0) + ph[1];
+        }
+        return res;
+      }
+    }
+    return entgenderCore0(text, opts, stats);
+  }
+
+  function entgenderCore0(text, opts, stats) {
     let t = text;
     const run = function (name, fn) {
       const before = t;

@@ -611,3 +611,22 @@ test('Zitate in Anführungszeichen: standardmäßig verändert, optional nicht',
   assert.equal(run('»Ärzt:innen« und Pfleger:innen', q), '»Ärzt:innen« und Pfleger');
   assert.equal(E.mergeSettings().skipQuotes, false);
 });
+
+test('Phettberg-Gendern', () => {
+  assert.equal(run('Liebe Lesys,'), 'Liebe Leser,');
+  assert.equal(run('Wir danken den Lesys'), 'Wir danken den Lesern');
+  assert.equal(run('Das Lehry kommt.'), 'Der Lehrer kommt.');
+  assert.equal(run('Ich sehe dem Lehry zu'), 'Ich sehe dem Lehrer zu');
+  assert.equal(run('des Lehrys Buch'), 'des Lehrers Buch');
+  assert.equal(run('Dem Kundy'), 'Dem Kunden');
+  assert.equal(run('Babys und Partys'), 'Babys und Partys');
+  const s = {};
+  assert.equal(run('Die Lesys', E.buildOptions({})), 'Die Leser');
+  E.entgender('Die Lesys', opts, s);
+  assert.deepEqual(s, { phettberg: 1 });
+  const off = E.buildOptions({ rules: { phettberg: false } });
+  assert.equal(run('Die Lesys', off), 'Die Lesys');
+  const nogap = E.buildOptions({ rules: { gap: false } });
+  assert.equal(run('Die Lesys', nogap), 'Die Leser');
+  assert.equal(E.mergeSettings().rules.phettberg, true);
+});

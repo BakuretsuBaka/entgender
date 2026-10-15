@@ -29,6 +29,7 @@
         articles: $('r-articles').checked,
         participles: $('r-participles').checked,
         abbreviations: $('r-abbreviations').checked,
+        phettberg: $('r-phettberg').checked,
         indefinite: $('r-indefinite').checked,
         oldTerms: $('r-oldTerms').checked,
         oldTermsHarsh: $('r-oldTermsHarsh').checked,
@@ -48,6 +49,7 @@
     $('r-articles').checked = s.rules.articles;
     $('r-participles').checked = s.rules.participles;
     $('r-abbreviations').checked = s.rules.abbreviations;
+    $('r-phettberg').checked = s.rules.phettberg;
     $('r-indefinite').checked = s.rules.indefinite;
     $('r-oldTerms').checked = s.rules.oldTerms;
     $('r-oldTermsHarsh').checked = s.rules.oldTermsHarsh;
@@ -78,7 +80,7 @@
     saveTimer = setTimeout(save, 400);
   }
 
-  ['onlyGerman', 'skipQuotes', 'sites', 'r-gap', 'r-doubles', 'r-determiners', 'r-articles', 'r-participles', 'r-abbreviations', 'r-indefinite', 'r-oldTerms', 'r-oldTermsHarsh', 'r-anglicisms', 'extendedView', 'custom', 'ignore']
+  ['onlyGerman', 'skipQuotes', 'sites', 'r-gap', 'r-doubles', 'r-determiners', 'r-articles', 'r-participles', 'r-abbreviations', 'r-phettberg', 'r-indefinite', 'r-oldTerms', 'r-oldTermsHarsh', 'r-anglicisms', 'extendedView', 'custom', 'ignore']
     .forEach(function (id) {
       $(id).addEventListener('input', changed);
       $(id).addEventListener('change', changed);
