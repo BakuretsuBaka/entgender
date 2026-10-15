@@ -681,3 +681,11 @@ test('Abkürzungen mit Trennstrich oder senkrechtem Strich, Schrägstrich mit gr
   assert.equal(run('Tischler/In'), 'Tischler');
   assert.equal(run('Wir suchen Tischler/Innen'), 'Wir suchen Tischler');
 });
+
+test('Berufe auf -mann/-frau', () => {
+  assert.equal(run('Kaufmann:frau'), 'Kaufmann');
+  assert.equal(run('Ein Kaufmann/-frau gesucht'), 'Ein Kaufmann gesucht');
+  assert.equal(run('Kauffrau/mann'), 'Kaufmann');
+  assert.equal(run('Kaufmänner:frauen'), 'Kaufmänner');
+  assert.equal(run('Mann/Frau'), 'Mann/Frau');
+});

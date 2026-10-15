@@ -428,7 +428,19 @@
   const reSpaceBefore = /(?<=\p{L}{4})[ \t\u00a0]+([*∗＊_\/])[ \t\u00a0]*(?=in(?:nen)?(?![\p{L}]))/gu;
   const reSpaceAfter = /(?<=\p{L}{4}[*∗＊_\/])[ \t\u00a0]+(?=in(?:nen)?(?![\p{L}]))/gu;
 
+  // Kaufmann:frau, Kauffrau/mann, Kaufmänner:frauen: Berufe auf -mann/-frau
+  const reMannFrau = new RegExp(P`(?<![\p{L}])(\p{L}{2,}(?:mann|männer))(s?)[${MARK}\/]-?[Ff]rau(?:en|s)?(?![\p{L}])`, 'gu');
+  const reFrauMann = new RegExp(P`(?<![\p{L}])(\p{L}{2,})(?:frau|frauen)[${MARK}\/]-?(?:mann|männer)(s?)(?![\p{L}])`, 'gu');
+  function mannFrau(t, opts) {
+    t = t.replace(reMannFrau, function (m, w, g) { return ignored(m, opts) ? m : w + g; });
+    return t.replace(reFrauMann, function (m, stem, g, off, str) {
+      if (ignored(m, opts)) return m;
+      return stem + (/frauen/.test(m.slice(stem.length, stem.length + 6)) ? 'männer' : 'mann') + g;
+    });
+  }
+
   function gap(t, opts) {
+    t = mannFrau(t, opts);
     t = t.replace(/(?<=\p{L}{3}\/)(In|Innen)(?![\p{L}])/gu, function (m) { return m.toLowerCase(); });
     t = t.replace(reSpaceBefore, '$1').replace(reSpaceAfter, '');
     t = t.replace(reDotMark, '$1*$2');
