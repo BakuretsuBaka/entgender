@@ -772,12 +772,15 @@
   const HARSH = [];
   function addHarsh(source, build) { HARSH.push([new RegExp(source, 'gu'), build]); }
 
-  addHarsh(P`(?<![\p{L}])([Dd]as\s+)?N[\-‐‑]Wort${END}`, function (g) {
-    return g[1] ? g[1] + 'Wort Neger' : 'Neger';
-  });
-  addHarsh(P`(?<![\p{L}])([Dd]as\s+)?Z[\-‐‑]Wort${END}`, function (g) {
-    return g[1] ? g[1] + 'Wort Zigeuner' : 'Zigeuner';
-  });
+  // "das N-Wort" zu "das Wort Neger", "des N-Wortes" zu "des Wortes Neger"; ohne Artikel nur "Neger"
+  const DET_WORT = '(?:[Dd]as|[Dd]es|[Dd]em|[Dd]ieses|[Dd]iesem|[Ee]in|[Ee]ines|[Ee]inem|[Kk]ein|[Kk]eines|[Kk]einem|[Jj]enes)';
+  function wortHarsh(letter, name) {
+    addHarsh(P`(?<![\p{L}])(${DET_WORT}\s+)?${letter}[\-‐‑]Wort(es|s)?${END}`, function (g) {
+      return g[1] ? g[1] + 'Wort' + (g[2] || '') + ' ' + name : name;
+    });
+  }
+  wortHarsh('N', 'Neger');
+  wortHarsh('Z', 'Zigeuner');
   addHarsh(P`${NO}Schokok(uss|üsse|üssen)${END}`, function (g) {
     return 'Negerk' + g[1];
   });
