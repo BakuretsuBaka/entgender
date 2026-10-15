@@ -746,14 +746,15 @@
     nominalTarget('Vergewaltigungsopfer', 'Vergewaltigungsopfern', true));
   addPhrase(P`${NO}[Vv]on\s+Rassismus\s+betroffene[n]?\s+Menschen${END}`,
     nounTarget('Opfer von Rassismus', 'Opfern von Rassismus'));
-  addPhrase(P`${NO}(?:BI[_*:+ \-]?(?:PoCs?|POCs?)|PoCs?|People\s+of\s+Colou?r|Person\s+of\s+Colou?r)(?![\p{L}\-])`,
+  addPhrase(P`${NO}(?:BI[_*:+ \-]?(?:PoCs?|POCs?)|B[_*:+ \-]?(?:PoCs?|POCs?)|PoCs?|POCs?|People\s+of\s+Colou?r|Person\s+of\s+Colou?r)(?![\p{L}\-])`,
     function (g, offset, str) {
       // "PoC" kann auch "Proof of Concept" heißen
       if (/(?:[Pp]roof[ \-]of[ \-][Cc]oncept|Konzeptnachweis|[Ee]xploit|Schwachstelle|Sicherheitslücke|CVE-)/.test(str)) return null;
       const kind = phrasePlural(str, offset);
       if (!kind) return null;
-      const adj = /^BI/.test(g[0]) ? 'nichtweiß' : 'schwarz';
-      return lowerStart(adj + adjEnding(kind) + ' Menschen', str, offset);
+      // BIPoC: nichtweiße Menschen, BPoC: Schwarze, PoC / People of Color: Farbige
+      if (/^BI/.test(g[0])) return lowerStart('nichtweiß' + adjEnding(kind) + ' Menschen', str, offset);
+      return (/^B/.test(g[0]) ? 'Schwarz' : 'Farbig') + adjEnding(kind);
     });
 
   // Einwanderungsgeschichte -> Migrationshintergrund (weiblich wird männlich, Artikel passt sich an)
