@@ -20,6 +20,7 @@ FILES = [
     "manifest.json", "rules.js", "content.js", "background.js",
     "popup.html", "popup.js", "options.html", "options.js", "ui.css",
     "icons/icon16.png", "icons/icon48.png", "icons/icon128.png",
+    "icons/icon-off16.png", "icons/icon-off48.png", "icons/icon-off128.png",
     "LICENSE",
 ]
 DEFAULT_ID = "entgender@bakuretsubaka.github.io"

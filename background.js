@@ -56,6 +56,19 @@ async function setBadge(tabId, n) {
   }
 }
 
+// Symbol: normal, oder rot ohne Balken, wenn die Erweiterung auf dieser Seite ausgeschaltet ist
+async function setIcon(tabId, paused) {
+  const pre = paused ? 'icons/icon-off' : 'icons/icon';
+  try {
+    await chrome.action.setIcon({
+      tabId: tabId,
+      path: { 16: pre + '16.png', 48: pre + '48.png', 128: pre + '128.png' },
+    });
+  } catch (e) {
+    // Tab wurde inzwischen geschlossen.
+  }
+}
+
 function enqueue(fn) {
   queue = queue.then(fn).catch(function () {});
   return queue;
@@ -73,6 +86,7 @@ chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
       o[tabId][sender.frameId] = { n: msg.count || 0, by: msg.by || {}, m: msg.mode || 'off' };
       await save(o);
       await setBadge(tabId, total(o, tabId));
+      if (sender.frameId === 0) await setIcon(tabId, !!msg.paused);
       // Gesamtzähler seit der Installation
       if (msg.add > 0) {
         const r = await chrome.storage.local.get('total');

@@ -272,6 +272,7 @@
   }
 
   // Meldet Anzahl und Aufteilung an den Service-Worker (Badge, Popup, Gesamtzähler).
+  let paused = false; // auf dieser Seite ausgeschaltet (Symbol wird rot)
   let reportTimer = 0;
   function report(immediate, init) {
     clearTimeout(reportTimer);
@@ -280,7 +281,7 @@
       try {
         const cs = currentStats();
         chrome.runtime.sendMessage(
-          { type: 'entgender:count', count: cs.n, by: cs.by, mode: mode, init: !!init, add: delta },
+          { type: 'entgender:count', count: cs.n, by: cs.by, mode: mode, paused: paused, init: !!init, add: delta },
           function () { void chrome.runtime.lastError; });
         delta = 0;
       } catch (e) { /* Kontext ungültig */ }
@@ -379,10 +380,11 @@
     const lang = (document.documentElement && document.documentElement.lang) || '';
     const langOk = !s.onlyGerman || !lang || /^de(?:-|_|$)/i.test(lang);
     const siteOff = E.siteDisabled(s.disabledSites, location.hostname);
-    const on = s.enabled && langOk && !siteOff;
+    const on = langOk && !siteOff;
     hlOn = !!(s.extendedView && s.highlight);
     stop();
     // Ist die Erweiterung aus und das Markieren an, wird nur erkannt (rot), nicht ersetzt.
+    paused = siteOff;
     mode = on ? 'on' : (hlOn && langOk ? 'detect' : 'off');
     if (mode !== 'off') start();
     report(true, firstApply);
@@ -406,7 +408,7 @@
     chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
       if (msg && msg.type === 'entgender:info') {
         const cs = currentStats();
-        sendResponse({ host: location.hostname, count: cs.n, by: cs.by, mode: mode, active: active, hl: hlSupported() });
+        sendResponse({ host: location.hostname, count: cs.n, by: cs.by, mode: mode, paused: paused, active: active, hl: hlSupported() });
       }
     });
   } catch (e) {

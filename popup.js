@@ -89,7 +89,6 @@
   }
 
   function render(info) {
-    $('enabled').checked = settings.enabled;
     if (!info) {
       // Browserseiten, Stores und vor der Installation geöffnete Seiten: dort läuft kein Skript
       $('site').hidden = true;
@@ -103,13 +102,13 @@
     $('site').disabled = !host;
     $('site').checked = !E.siteDisabled(settings.disabledSites, host);
     $('siteLabel').textContent = host ? 'Auf ' + host + ' aktiv' : 'Auf dieser Seite aktiv';
-    const on = settings.enabled && $('site').checked;
+    const on = $('site').checked;
     if (on) {
       $('count').textContent = info.count === 1 ? '1 Stelle auf dieser Seite angepasst' : info.count + ' Stellen auf dieser Seite angepasst';
     } else if (info.mode === 'detect') {
       $('count').textContent = info.count === 1 ? 'Aus. 1 Stelle würde ersetzt.' : 'Aus. ' + info.count + ' Stellen würden ersetzt.';
     } else {
-      $('count').textContent = settings.enabled ? 'Auf dieser Seite ausgeschaltet' : 'Erweiterung ausgeschaltet';
+      $('count').textContent = 'Auf dieser Seite ausgeschaltet';
     }
     renderExtended(info);
   }
@@ -133,12 +132,6 @@
     }
     render(info);
   }
-
-  $('enabled').addEventListener('change', function () {
-    settings.enabled = $('enabled').checked;
-    save();
-    setTimeout(refresh, 400);
-  });
 
   $('site').addEventListener('change', function () {
     const bare = host.replace(/^www\./, '');
