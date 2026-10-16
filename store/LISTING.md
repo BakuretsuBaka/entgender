@@ -29,7 +29,7 @@ Bedienung:
 • Funktioniert auch bei nachgeladenen Inhalten
 • Eingabefelder und Code-Blöcke bleiben unverändert
 
-Datenschutz: Alles läuft lokal im Browser. Es werden keine Daten gesammelt oder übertragen. Der Quellcode ist frei (MIT-Lizenz).
+Datenschutz: Alles läuft lokal im Browser. Es werden keine Daten gesammelt oder übertragen. Der Quellcode ist frei (GPL-3.0-Lizenz).
 
 ## Kategorie
 Chrome: Produktivität (oder Barrierefreiheit). AMO: Sonstiges oder Suche und Navigation, falls Sprache/Lesen nicht passt.

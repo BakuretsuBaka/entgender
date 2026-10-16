@@ -64,7 +64,7 @@ USERSCRIPT_HEADER = """// ==UserScript==
 // @version      @VERSION@
 // @description  Entfernt Gendersprache auf Webseiten: Genderstern, Doppelpunkt, Binnen-I, Doppelformen, Partizipien.
 // @author       Entgender contributors
-// @license      MIT
+// @license      GPL-3.0-only
 // @homepageURL  https://github.com/BakuretsuBaka/entgender
 // @match        http://*/*
 // @match        https://*/*

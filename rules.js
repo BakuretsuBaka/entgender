@@ -1,6 +1,6 @@
 /*!
  * Entgender: Regeln zum Entfernen von Gendersprache (Deutsch)
- * Lizenz: MIT
+ * Lizenz: GPL-3.0-only
  *
  * Wird sowohl im Content-Script, im Popup, auf der Optionsseite
  * als auch in den Node-Tests verwendet.
