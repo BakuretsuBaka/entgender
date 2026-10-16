@@ -1198,6 +1198,20 @@
     ANG_ADJ_RAW.map(function (a) { return a[0]; }).join('|') + '|' + ANG_ADJN_RAW.map(function (a) { return a[0]; }).join('|') + '|' +
     ANG_VERBS_RAW.map(function (v) { return v[0]; }).join('|') + ')', 'u');
 
+  // "als Download" -> "zum Herunterladen" (nicht "als Herunterladen"); mit Adjektiv: "als kostenloser Download"
+  // -> "zum kostenlosen Herunterladen"
+  const ANG_LOAD = { download: 'Herunterladen', upload: 'Hochladen' };
+  const reAlsLoad = new RegExp(
+    P`${ANG_PRE}([Aa]ls)(\s+)(?:(\p{Ll}{3,}?)(?:er|es|en|e)(\s+))?(Download|Upload)${ANG_POST}`, 'gu');
+
+  function alsLoad(t, opts) {
+    return scan(reAlsLoad, t, function (m, als, ws, adj, aws, word) {
+      if (ignored(m, opts)) return m;
+      if (adj && (detParts(adj) || detParts(adj + 'e') || ANG_STOP.has(adj))) return null;
+      return matchCase(als, 'zum') + ws + (adj ? adj + 'en' + aws : '') + ANG_LOAD[word.toLowerCase()];
+    });
+  }
+
   const CASE_NAMES = { D: 'dat', A: 'acc', G: 'gen' };
 
   function angReplace(t, sp, opts) {
@@ -1303,6 +1317,7 @@
   }
 
   function anglicisms(t, opts) {
+    t = alsLoad(t, opts);
     for (let i = 0; i < ANG_SPECS.length; i++) t = angReplace(t, ANG_SPECS[i], opts);
     t = scan(reShort, t, function (m, site, sep, s) {
       return ignored(m, opts) ? null : site + sep + (s ? 'Kurzvideos' : 'Kurzvideo');
