@@ -1,4 +1,6 @@
-# Entgender
+<p align="center"><img src="icons/icon128.png" width="96" alt="Entgender icon"></p>
+
+<h1 align="center">Entgender</h1>
 
 Browser-Erweiterung (Chrome und alle Chromium-Browser, Manifest V3), die Gendersprache auf Webseiten entfernt. Sie ersetzt die drei Erweiterungen „Binnen-I be gone“, „Gendersprache korrigieren“ und „No Gender“. Lizenz: GPL-3.0-only.
 
